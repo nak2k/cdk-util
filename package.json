@@ -1,0 +1,23 @@
+{
+  "name": "cdk-util",
+  "version": "0.1.0",
+  "private": "true",
+  "description": "Utilities for AWS CDK",
+  "author": "Kengo Nakatsuka <kengo.nakatsuka@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/nak2k/cdk-util/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "homepage": "https://github.com/nak2k/cdk-util",
+  "keywords": [
+    "aws",
+    "cdk"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nak2k/cdk-util.git"
+  },
+  "scripts": {}
+}
