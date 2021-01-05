@@ -1,6 +1,6 @@
 {
   "name": "@cdk-util/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Utilities for AWS CDK",
   "author": "Kengo Nakatsuka <kengo.nakatsuka@gmail.com>",
   "bugs": {
@@ -16,6 +16,9 @@
   },
   "peerDependencies": {
     "@aws-cdk/core": "^1.60.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "homepage": "https://github.com/nak2k/cdk-util/packages/@cdk-util/core",
   "keywords": [

@@ -16,6 +16,9 @@
   "peerDependencies": {
     "@aws-cdk/aws-logs": "^1.60.0"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "homepage": "https://github.com/nak2k/cdk-util/packages/@cdk-util/aws-logs",
   "keywords": [
     "aws",
