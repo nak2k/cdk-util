@@ -7,7 +7,10 @@ import { copyFileSync } from 'fs';
 import { tmpdir } from 'os';
 
 export interface NodejsLayerVersionProps {
-  codeDirectory: string;
+  /**
+   * The path of the directory that contains package.json and package-lock.json.
+   */
+  packageDirectory: string;
 
   /**
    * The boolean value whether use package-lock.json instead of package.json.
@@ -43,12 +46,12 @@ export class NodejsLayerVersion extends Construct {
   constructor(scope: Construct, id: string, private props: NodejsLayerVersionProps) {
     super(scope, id);
 
-    const { codeDirectory, useLockFile, npmArgs, providerOnly } = props;
+    const { packageDirectory, useLockFile, npmArgs, providerOnly } = props;
 
     const tmpDir = createDirSync(join(tmpdir(), 'cdk-util-aws-lambda-XXXXXXXX'));
 
-    copyFileSync(join(codeDirectory, 'package.json'), join(tmpDir, 'package.json'));
-    copyFileSync(join(codeDirectory, 'package-lock.json'), join(tmpDir, 'package-lock.json'));
+    copyFileSync(join(packageDirectory, 'package.json'), join(tmpDir, 'package.json'));
+    copyFileSync(join(packageDirectory, 'package-lock.json'), join(tmpDir, 'package-lock.json'));
 
     const asset = new Asset(this, 'Asset', {
       path: tmpDir,
