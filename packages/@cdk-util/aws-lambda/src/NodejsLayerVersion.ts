@@ -20,9 +20,17 @@ export interface NodejsLayerVersionProps {
 export class NodejsLayerVersion extends Construct {
   public static readonly resourceType = 'Custom::NodejsLayerVersion';
 
-  public readonly layerVersion: ILayerVersion;
+  private _layerVersion: ILayerVersion;
 
-  constructor(scope: Construct, id: string, props: NodejsLayerVersionProps) {
+  public get layerVersion(): ILayerVersion {
+    if (this.props.providerOnly) {
+      throw new Error('The providerOnly option is enabled, so LayerVersion is not created');
+    }
+
+    return this._layerVersion;
+  }
+
+  constructor(scope: Construct, id: string, private props: NodejsLayerVersionProps) {
     super(scope, id);
 
     const { codeDirectory, useLockFile, providerOnly } = props;
@@ -68,6 +76,6 @@ export class NodejsLayerVersion extends Construct {
       },
     });
 
-    this.layerVersion = LayerVersion.fromLayerVersionArn(this, 'LayerVersion', resource.ref);
+    this._layerVersion = LayerVersion.fromLayerVersionArn(this, 'LayerVersion', resource.ref);
   }
 }
