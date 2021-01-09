@@ -24,7 +24,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/nak2k/cdk-util/packages/@cdk-util/aws-lambda",
+  "homepage": "https://github.com/nak2k/cdk-util/tree/master/packages/@cdk-util/aws-lambda",
   "keywords": [
     "aws",
     "cdk"
