@@ -50,5 +50,8 @@
   "files": [
     "README.md",
     "lib/"
-  ]
+  ],
+  "dependencies": {
+    "mktemp": "^1.0.0"
+  }
 }

@@ -19,14 +19,11 @@ export type HandlerResponse = undefined | {
 
 interface NodejsLayerVersionProperties {
   ServiceToken: string;
-  Package?: {
+  Package: {
     Bucket: string;
     Key: string;
   };
-  PackageLock?: {
-    Bucket: string;
-    Key: string;
-  };
+  NpmArgs: ReadonlyArray<string>;
 }
 
 export async function handler(event: CloudFormationCustomResourceEvent): Promise<HandlerResponse> {
@@ -47,9 +44,7 @@ async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<Han
 
       const props = ResourceProperties as NodejsLayerVersionProperties;
 
-      if (props.Package && props.PackageLock) {
-        throw new Error('Either Package or PackageLock must be specified');
-      }
+      validateProperties(props);
 
       const layerVersion = await publishLayer(LogicalResourceId, props);
 
@@ -70,20 +65,16 @@ async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<Han
       const props = ResourceProperties as NodejsLayerVersionProperties;
       const oldProps = OldResourceProperties as NodejsLayerVersionProperties;
 
-      if (props.Package && props.PackageLock) {
-        throw new Error('Either Package or PackageLock must be specified');
-      }
+      validateProperties(props);
 
-      if ((props.Package && oldProps.Package &&
-        props.Package.Bucket === oldProps.Package.Bucket &&
-        props.Package.Key === oldProps.Package.Key)
-        || (props.PackageLock && oldProps.PackageLock &&
-          props.PackageLock.Bucket === oldProps.PackageLock.Bucket &&
-          props.PackageLock.Key === oldProps.PackageLock.Key)) {
-        return {
-          PhysicalResourceId,
-          Reason: `The lambda layer ${LogicalResourceId} has not been modified`,
-        };
+      if (props.Package.Bucket === oldProps.Package.Bucket &&
+        props.Package.Key === oldProps.Package.Key) {
+        if (equalArrays(props.NpmArgs, oldProps.NpmArgs)) {
+          return {
+            PhysicalResourceId,
+            Reason: `The lambda layer ${LogicalResourceId} has not been modified`,
+          };
+        }
       }
 
       const layerVersion = await publishLayer(LogicalResourceId, props);
@@ -123,33 +114,62 @@ async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<Han
   }
 }
 
+function equalArrays<T>(lhs: readonly T[], rhs: readonly T[]) {
+  return lhs.length === rhs.length && !lhs.some((arg, index) => arg !== rhs[index]);
+}
+
+function validateProperties(props: NodejsLayerVersionProperties) {
+  if (!props.Package) {
+    throw new Error('Package must be specified');
+  }
+
+  if (!props.Package.Bucket) {
+    throw new Error('Package.Bucket must be specified');
+  }
+
+  if (!props.Package.Key) {
+    throw new Error('Package.Key must be specified');
+  }
+
+  if (!props.NpmArgs || !props.NpmArgs.length) {
+    throw new Error('NpmArgs must be specified');
+  }
+}
+
 async function publishLayer(layerNme: string, props: NodejsLayerVersionProperties) {
   await rmdir(`${TMPDIR}/nodejs`, { recursive: true }).catch(_err => { });
   await mkdir(`${TMPDIR}/nodejs`, { recursive: true });
 
+  const { Package, NpmArgs } = props;
+
   const s3 = new S3();
 
-  const objectInfo = props.Package
-    ? {
-      Bucket: props.Package.Bucket,
-      Key: props.Package.Key,
-    } : {
-      Bucket: props.PackageLock!.Bucket,
-      Key: props.PackageLock!.Key,
-    };
+  const s3Url = `s3://${Package.Bucket}/${Package.Key}`;
 
-  const packageLockS3Object = await s3.getObject(objectInfo).promise();
+  console.log(`Get S3 object ${s3Url}`);
 
-  if (!packageLockS3Object.Body) {
-    throw new Error(`The S3 object s3://${objectInfo.Bucket}/${objectInfo.Key} must not be empty`);
+  const packageS3Object = await s3.getObject(Package).promise();
+
+  if (!packageS3Object.Body) {
+    throw new Error(`The S3 object ${s3Url} must not be empty`);
   }
 
-  const usePackageLock = props.PackageLock;
-  const fileName = usePackageLock ? 'package-lock.json' : 'package.json';
+  console.log('Load as the zip filie');
 
-  await writeFile(`${TMPDIR}/nodejs/${fileName}`, packageLockS3Object.Body.toString());
+  const packageZip = await JSZip.loadAsync(packageS3Object.Body as any);
 
-  await spawnPromise('npm', [usePackageLock ? 'ci' : 'install', '--production'], {
+  for (const filename of ['package.json', 'package-lock.json']) {
+    console.log(`Extract ${filename}`);
+
+    const packageJsonFile = packageZip.file(filename);
+    if (!packageJsonFile) {
+      throw new Error(`${filename} not found in the zip file`);
+    }
+
+    await writeFile(`${TMPDIR}/nodejs/${filename}`, await packageJsonFile.async('string'));
+  }
+
+  await spawnPromise('npm', NpmArgs, {
     cwd: `${TMPDIR}/nodejs`,
     stdio: 'inherit',
     env: {
@@ -163,6 +183,7 @@ async function publishLayer(layerNme: string, props: NodejsLayerVersionPropertie
   const zip = await zipFiles('nodejs/**/*', {
     cwd: TMPDIR,
     nodir: true,
+    ignore: ['nodejs/package.json', 'nodejs/package-lock.json'],
     zip: new JSZip(),
     compression: 'DEFLATE',
     compressionOptions: {
@@ -187,7 +208,7 @@ async function publishLayer(layerNme: string, props: NodejsLayerVersionPropertie
   }).promise();
 }
 
-async function spawnPromise(cmd: string, args: string[], options: SpawnOptions) {
+async function spawnPromise(cmd: string, args: readonly string[], options: SpawnOptions) {
   console.log(`Spawn: ${cmd} ${args.join(' ')}`);
 
   return new Promise<void>((resolve, reject) => {

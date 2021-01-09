@@ -22,7 +22,7 @@ export class NodejsLayerExampleStack extends DefaultEnvStack {
     const providerOnly = false;
     const layer = new NodejsLayerVersion(this, "LayerVersion", {
       codeDirectory: lambdaPath,
-      useLockFile: false,
+      useLockFile: true,
       providerOnly,
     });
 
