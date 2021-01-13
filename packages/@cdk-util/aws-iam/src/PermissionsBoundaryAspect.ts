@@ -1,5 +1,5 @@
-import { ManagedPolicy, CfnRole, CfnUser } from '@aws-cdk/aws-iam';
-import { IAspect, IConstruct, Stack } from '@aws-cdk/core';
+import { ManagedPolicy } from '@aws-cdk/aws-iam';
+import { IAspect, IConstruct, Stack, CfnResource } from '@aws-cdk/core';
 
 export class PermissionsBoundaryAspect implements IAspect {
   private managedPolicyId = 'permissionsBoundaryPolicy';
@@ -8,8 +8,10 @@ export class PermissionsBoundaryAspect implements IAspect {
   }
 
   visit(node: IConstruct): void {
-    if (node instanceof CfnRole || node instanceof CfnUser) {
-      node.permissionsBoundary = this.getPolicy(node).managedPolicyArn;
+    if (node instanceof CfnResource) {
+      if (node.cfnResourceType === 'AWS::IAM::Role' || node.cfnResourceType === 'AWS::IAM::User') {
+        node.addPropertyOverride('PermissionsBoundary', this.getPolicy(node).managedPolicyArn);
+      }
     }
   }
 
