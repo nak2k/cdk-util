@@ -59,7 +59,7 @@ export class NodejsFunction extends FunctionBase {
     this.canCreatePermissions = true;
   }
 
-  private static getCode(packageDirectory: string) {
+  public static getCode(packageDirectory: string) {
     const pkg = readFileSync(join(packageDirectory, 'package.json'), 'utf8');
     const { main } = JSON.parse(pkg);
 
