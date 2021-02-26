@@ -2,7 +2,7 @@ import { Fn } from "@aws-cdk/core";
 
 export class FnEx {
   /**
-   * The tag function that is equivalent to Fn.join() with empty string delimiter.
+   * The tag function that is equivalent to call Fn.join() with empty delimiter.
    * 
    * @param strings 
    * @param values 
