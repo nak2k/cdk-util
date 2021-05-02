@@ -87,28 +87,20 @@ async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<Han
 
     case 'Delete': {
       const {
-        LogicalResourceId,
+        PhysicalResourceId,
       } = event;
 
       const lambda = new Lambda();
 
-      const layerVersions = await lambda.listLayerVersions({
-        LayerName: LogicalResourceId,
+      const [, , , , , , LayerName, VersionNumber] = PhysicalResourceId.split(':');
+
+      await lambda.deleteLayerVersion({
+        LayerName,
+        VersionNumber: parseInt(VersionNumber, 10),
       }).promise();
 
-      if (!layerVersions.LayerVersions) {
-        throw new Error(`The lambda layer ${LogicalResourceId} not found`);
-      }
-
-      await Promise.all(layerVersions.LayerVersions.map(layerVersion => {
-        return lambda.deleteLayerVersion({
-          LayerName: LogicalResourceId,
-          VersionNumber: layerVersion.Version!,
-        }).promise();
-      }));
-
       return {
-        Reason: `The lambda layer ${LogicalResourceId} has been deleted`,
+        Reason: `The lambda layer ${PhysicalResourceId} has been deleted`,
       };
     }
   }
