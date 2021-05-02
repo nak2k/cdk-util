@@ -59,7 +59,7 @@ export class NodejsLayerVersion extends Construct {
 
     const serviceToken = CustomResourceProvider.getOrCreate(scope, NodejsLayerVersion.resourceType, {
       codeDirectory: join(__dirname, 'nodejslayer-handler'),
-      runtime: CustomResourceProviderRuntime.NODEJS_12,
+      runtime: CustomResourceProviderRuntime.NODEJS_14_X,
       memorySize: Size.mebibytes(512),
       policyStatements: [
         {
