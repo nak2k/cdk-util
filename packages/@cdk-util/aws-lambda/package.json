@@ -1,6 +1,6 @@
 {
   "name": "@cdk-util/aws-lambda",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Utilities for AWS CDK",
   "author": "Kengo Nakatsuka <kengo.nakatsuka@gmail.com>",
   "bugs": {
