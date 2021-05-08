@@ -150,17 +150,42 @@ async function publishLayer(layerNme: string, props: NodejsLayerVersionPropertie
 
   const packageZip = await JSZip.loadAsync(packageS3Object.Body as any);
 
-  for (const filename of ['package.json', 'package-lock.json']) {
-    console.log(`Extract ${filename}`);
+  //
+  // Read package.json.
+  //
+  console.log(`Extract package.json`);
 
-    const packageJsonFile = packageZip.file(filename);
-    if (!packageJsonFile) {
-      throw new Error(`${filename} not found in the zip file`);
-    }
-
-    await writeFile(`${TMPDIR}/nodejs/${filename}`, await packageJsonFile.async('string'));
+  const packageJsonFile = packageZip.file('package.json');
+  if (!packageJsonFile) {
+    throw new Error(`package.json not found in the zip file`);
   }
 
+  const packageJsonStr = await packageJsonFile.async('string');
+  await writeFile(`${TMPDIR}/nodejs/package.json`, packageJsonStr);
+
+  let packageJson;
+
+  try {
+    packageJson = JSON.parse(packageJsonStr);
+  } catch (err) {
+    throw new Error(`The package.json is invalid JSON. ${err.message}`);
+  }
+
+  //
+  // Read package-lock.json.
+  //
+  console.log(`Extract package-lock.json`);
+
+  const packageLockJsonFile = packageZip.file('package-lock.json');
+  if (!packageLockJsonFile) {
+    throw new Error(`package-lock.json not found in the zip file`);
+  }
+
+  await writeFile(`${TMPDIR}/nodejs/package-lock.json`, await packageLockJsonFile.async('string'));
+
+  //
+  // Run npm.
+  //
   await spawnPromise('npm', NpmArgs, {
     cwd: `${TMPDIR}/nodejs`,
     stdio: 'inherit',
@@ -193,6 +218,7 @@ async function publishLayer(layerNme: string, props: NodejsLayerVersionPropertie
 
   return lambda.publishLayerVersion({
     LayerName: layerNme,
+    Description: packageJson.name,
     CompatibleRuntimes: ['nodejs'],
     Content: {
       ZipFile,
