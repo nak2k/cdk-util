@@ -1,6 +1,6 @@
 {
   "name": "@cdk-util/aws-codebuild",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Utilities for AWS CDK",
   "author": "Kengo Nakatsuka <kengo.nakatsuka@gmail.com>",
   "bugs": {
