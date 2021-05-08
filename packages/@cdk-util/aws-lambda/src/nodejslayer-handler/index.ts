@@ -38,6 +38,7 @@ async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<Han
   switch (event.RequestType) {
     case 'Create': {
       const {
+        StackId,
         LogicalResourceId,
         ResourceProperties,
       } = event;
@@ -46,11 +47,14 @@ async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<Han
 
       validateProperties(props);
 
-      const layerVersion = await publishLayer(LogicalResourceId, props);
+      const [, stackName] = StackId.split('/');
+      const layerName = `${stackName}-${LogicalResourceId}`;
+
+      const layerVersion = await publishLayer(layerName, props);
 
       return {
         PhysicalResourceId: layerVersion.LayerVersionArn!,
-        Reason: `The lambda layer ${LogicalResourceId} has been created`,
+        Reason: `The lambda layer ${layerName} has been created`,
       };
     }
 
@@ -67,21 +71,23 @@ async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<Han
 
       validateProperties(props);
 
+      const [, , , , , , LayerName] = PhysicalResourceId.split(':');
+
       if (props.Package.Bucket === oldProps.Package.Bucket &&
         props.Package.Key === oldProps.Package.Key) {
         if (equalArrays(props.NpmArgs, oldProps.NpmArgs)) {
           return {
             PhysicalResourceId,
-            Reason: `The lambda layer ${LogicalResourceId} has not been modified`,
+            Reason: `The lambda layer ${LayerName} has not been modified`,
           };
         }
       }
 
-      const layerVersion = await publishLayer(LogicalResourceId, props);
+      const layerVersion = await publishLayer(LayerName, props);
 
       return {
         PhysicalResourceId: layerVersion.LayerVersionArn!,
-        Reason: `The lambda layer ${LogicalResourceId} has been updated`,
+        Reason: `The lambda layer ${LayerName} has been updated`,
       };
     }
 
@@ -128,7 +134,7 @@ function validateProperties(props: NodejsLayerVersionProperties) {
   }
 }
 
-async function publishLayer(layerNme: string, props: NodejsLayerVersionProperties) {
+async function publishLayer(layerName: string, props: NodejsLayerVersionProperties) {
   await rmdir(`${TMPDIR}/nodejs`, { recursive: true }).catch(_err => { });
   await mkdir(`${TMPDIR}/nodejs`, { recursive: true });
 
@@ -212,12 +218,12 @@ async function publishLayer(layerNme: string, props: NodejsLayerVersionPropertie
 
   const ZipFile = await zip.generateAsync({ type: 'nodebuffer' });
 
-  console.log(`Publish the layer version ${layerNme}`);
+  console.log(`Publish the layer version ${layerName}`);
 
   const lambda = new Lambda();
 
   return lambda.publishLayerVersion({
-    LayerName: layerNme,
+    LayerName: layerName,
     Description: packageJson.name,
     CompatibleRuntimes: ['nodejs'],
     Content: {
