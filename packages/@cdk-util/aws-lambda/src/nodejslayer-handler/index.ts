@@ -128,7 +128,7 @@ function validateProperties(props: NodejsLayerVersionProperties) {
   }
 }
 
-async function publishLayer(layerNme: string, props: NodejsLayerVersionProperties) {
+async function publishLayer(layerName: string, props: NodejsLayerVersionProperties) {
   await rmdir(`${TMPDIR}/nodejs`, { recursive: true }).catch(_err => { });
   await mkdir(`${TMPDIR}/nodejs`, { recursive: true });
 
@@ -212,12 +212,12 @@ async function publishLayer(layerNme: string, props: NodejsLayerVersionPropertie
 
   const ZipFile = await zip.generateAsync({ type: 'nodebuffer' });
 
-  console.log(`Publish the layer version ${layerNme}`);
+  console.log(`Publish the layer version ${layerName}`);
 
   const lambda = new Lambda();
 
   return lambda.publishLayerVersion({
-    LayerName: layerNme,
+    LayerName: layerName,
     Description: packageJson.name,
     CompatibleRuntimes: ['nodejs'],
     Content: {
