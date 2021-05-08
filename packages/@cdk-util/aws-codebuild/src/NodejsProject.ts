@@ -6,27 +6,29 @@ import {
 import { Construct } from '@aws-cdk/core';
 
 export interface NodejsProjectProps extends ProjectProps {
-
+  /**
+   * Whether to enable the webhook.
+   * 
+   * @default true
+   */
+  webhook?: boolean;
 }
 
 export class NodejsProject extends Project {
   constructor(scope: Construct, id: string, props: NodejsProjectProps = {}) {
     const gitHubSourceProps = NodejsProject.getGitHubSourcePropsFromPackageJson();
-    let {
+    const { webhook = true } = props;
+    const {
       projectName,
-      source,
       environment,
-    } = props;
-
-    if (!source) {
       source = Source.gitHub({
         ...gitHubSourceProps,
-        webhook: true,
-        webhookFilters: [
+        webhook,
+        webhookFilters: webhook ? [
           FilterGroup.inEventOf(EventAction.PUSH).andBranchIs('master'),
-        ],
-      });
-    }
+        ] : undefined,
+      }),
+    } = props;
 
     super(scope, id, {
       ...props,
