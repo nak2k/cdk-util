@@ -1,0 +1,54 @@
+{
+  "name": "@cdk-util/aws-apigateway",
+  "version": "0.1.0",
+  "description": "Utilities for AWS CDK",
+  "author": "Kengo Nakatsuka <kengo.nakatsuka@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/nak2k/cdk-util/issues"
+  },
+  "devDependencies": {
+    "@aws-cdk/aws-apigateway": "1.96.0",
+    "@aws-cdk/aws-iam": "1.96.0",
+    "@aws-cdk/aws-s3": "1.96.0",
+    "@aws-cdk/core": "1.96.0",
+    "@types/node": "^14.14.20",
+    "aws-cdk": "1.96.0",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.1.3"
+  },
+  "peerDependencies": {
+    "@aws-cdk/aws-apigateway": "^1.96.0",
+    "@aws-cdk/aws-iam": "^1.96.0",
+    "@aws-cdk/aws-s3": "^1.96.0",
+    "@aws-cdk/core": "^1.96.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/nak2k/cdk-util/tree/master/packages/@cdk-util/aws-apigateway",
+  "keywords": [
+    "aws",
+    "cdk"
+  ],
+  "license": "MIT",
+  "main": "lib",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nak2k/cdk-util.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf lib",
+    "prepack": "npm t",
+    "prepublishOnly": "run-s test",
+    "postpublish": "npm-sns",
+    "pretest": "run-s clean build",
+    "test": "",
+    "watch": "tsc -w"
+  },
+  "files": [
+    "README.md",
+    "lib/"
+  ]
+}
