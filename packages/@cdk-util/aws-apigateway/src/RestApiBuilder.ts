@@ -11,6 +11,7 @@ export interface RestApiBuilderProps {
 
 export type S3IntegrationProps = {
   bucket: IBucket;
+  path?: string;
   role?: IRole;
 } & Omit<MethodOptions, "requestParameters" | "methodResponses">;
 
@@ -75,7 +76,7 @@ export class RestApiBuilder {
   getS3Integration(path: string | readonly string[], props: S3IntegrationProps) {
     if (typeof path !== 'string') {
       path.forEach(path => this.getS3Integration(path, props));
-      return;
+      return this;
     }
 
     if (path.match(/\+}/)) {
@@ -84,6 +85,7 @@ export class RestApiBuilder {
 
     const {
       bucket,
+      path: integrationPath = path,
       role: credentialsRole = this.defaultRole,
       ...methodOptions
     } = props;
@@ -94,10 +96,20 @@ export class RestApiBuilder {
 
     const pathParameters = path.match(/(?<=\{)[^}]+(?=\})/g) || [];
 
+    if (integrationPath !== path) {
+      const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
+
+      for (const paramName of s3pathParameters) {
+        if (!pathParameters.includes(paramName)) {
+          throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
+        }
+      }
+    }
+
     return this.get(path, new AwsIntegration({
       service: "s3",
       integrationHttpMethod: "GET",
-      path,
+      path: integrationPath,
       subdomain: bucket.bucketName,
       options: {
         credentialsRole,
