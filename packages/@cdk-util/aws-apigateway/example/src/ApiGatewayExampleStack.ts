@@ -8,7 +8,7 @@ import { Role, ServicePrincipal } from '@aws-cdk/aws-iam';
 export class ApiGatewayExampleStack extends DefaultEnvStack {
   constructor(scope: Construct, id: string) {
     super(scope, id, {
-      description: `ApiGateway Example`,
+      description: `@cdk-util/aws-apigateway Example`,
     });
 
     const bucket = new Bucket(this, "ExampleBucket");
