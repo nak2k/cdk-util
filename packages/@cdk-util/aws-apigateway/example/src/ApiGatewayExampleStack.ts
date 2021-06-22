@@ -1,8 +1,9 @@
-import { Construct } from "@aws-cdk/core";
+import { Construct, RemovalPolicy } from "@aws-cdk/core";
 import { DefaultEnvStack } from "@cdk-util/core";
 import { RestApi, MockIntegration, PassthroughBehavior } from "@aws-cdk/aws-apigateway";
 import { RestApiBuilder } from "@cdk-util/aws-apigateway";
 import { Bucket } from '@aws-cdk/aws-s3';
+import { BucketDeployment, Source } from "@aws-cdk/aws-s3-deployment";
 import { Role, ServicePrincipal } from '@aws-cdk/aws-iam';
 
 export class ApiGatewayExampleStack extends DefaultEnvStack {
@@ -11,7 +12,16 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       description: `@cdk-util/aws-apigateway Example`,
     });
 
-    const bucket = new Bucket(this, "ExampleBucket");
+    const bucket = new Bucket(this, "ExampleBucket", {
+      autoDeleteObjects: true,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    new BucketDeployment(this, "BucketDeployment", {
+      sources: [Source.asset("./web")],
+      destinationBucket: bucket,
+      destinationKeyPrefix: "web",
+    });
 
     const restApiRole = new Role(this, "Role", {
       assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
@@ -41,6 +51,7 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       .any("/", mockIntegration)
       .get("/{proxy+}", mockIntegration)
       .getS3Integration("/test/{dir}/{file}", { bucket })
-      .getS3Integration("/test2/{a}/{b}/{c}", { bucket, path: "/test3/{a}/{c}" });
+      .getS3Integration("/test2/{a}/{b}/{c}", { bucket, path: "/test3/{a}/{c}" })
+      .getS3Integration("/web/{file}", { bucket });
   }
 }

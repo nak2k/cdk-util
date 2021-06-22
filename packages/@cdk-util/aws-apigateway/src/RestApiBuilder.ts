@@ -96,15 +96,41 @@ export class RestApiBuilder {
 
     const pathParameters = path.match(/(?<=\{)[^}]+(?=\})/g) || [];
 
-    if (integrationPath !== path) {
-      const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
-
-      for (const paramName of s3pathParameters) {
-        if (!pathParameters.includes(paramName)) {
-          throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
-        }
+    const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
+    for (const paramName of s3pathParameters) {
+      if (!pathParameters.includes(paramName)) {
+        throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
       }
     }
+
+    const requestParameters: { [dest: string]: string; } = {
+      "integration.request.header.If-Match": "method.request.header.If-Match",
+      "integration.request.header.If-Modified-Since": "method.request.header.If-Modified-Since",
+      "integration.request.header.If-None-Match": "method.request.header.If-None-Match",
+      "integration.request.header.If-Unmodified-Since": "method.request.header.If-Unmodified-Since",
+      "integration.request.header.Range": "method.request.header.Range",
+    };
+
+    pathParameters.forEach(name =>
+      requestParameters[`integration.request.path.${name}`] = `method.request.path.${name}`
+    );
+
+    const normalResponseParameters = {
+      'method.response.header.Accept-Ranges': 'integration.response.header.Accept-Ranges',
+      'method.response.header.Cache-Control': 'integration.response.header.Cache-Control',
+      'method.response.header.Content-Disposition': 'integration.response.header.Content-Disposition',
+      'method.response.header.Content-Encoding': 'integration.response.header.Content-Encoding',
+      'method.response.header.Content-Language': 'integration.response.header.Content-Language',
+      'method.response.header.Content-Range': 'integration.response.header.Content-Range',
+      'method.response.header.Content-Type': 'integration.response.header.Content-Type',
+      'method.response.header.ETag': 'integration.response.header.ETag',
+      'method.response.header.Expires': 'integration.response.header.Expires',
+      'method.response.header.Last-Modified': 'integration.response.header.Last-Modified',
+    };
+
+    const errorResponseParameters = {
+      'method.response.header.Content-Type': 'integration.response.header.Content-Type',
+    };
 
     return this.get(path, new AwsIntegration({
       service: "s3",
@@ -113,77 +139,65 @@ export class RestApiBuilder {
       subdomain: bucket.bucketName,
       options: {
         credentialsRole,
-        requestParameters: pathParameters.reduce((result, name) => {
-          result[`integration.request.path.${name}`] = `method.request.path.${name}`;
-          return result;
-        }, {} as { [dest: string]: string }),
-        integrationResponses: [{
-          statusCode: "200",
-          responseParameters: {
-            'method.response.header.Accept-Ranges': 'integration.response.header.Accept-Ranges',
-            'method.response.header.Cache-Control': 'integration.response.header.Cache-Control',
-            'method.response.header.Content-Disposition': 'integration.response.header.Content-Disposition',
-            'method.response.header.Content-Encoding': 'integration.response.header.Content-Encoding',
-            'method.response.header.Content-Language': 'integration.response.header.Content-Language',
-            'method.response.header.Content-Length': 'integration.response.header.Content-Length',
-            'method.response.header.Content-Range': 'integration.response.header.Content-Range',
-            'method.response.header.Content-Type': 'integration.response.header.Content-Type',
-            'method.response.header.Date': 'integration.response.header.Date',
-            'method.response.header.ETag': 'integration.response.header.ETag',
-            'method.response.header.Expires': 'integration.response.header.Expires',
-            'method.response.header.Last-Modified': 'integration.response.header.Last-Modified',
+        requestParameters,
+        integrationResponses: [
+          {
+            statusCode: "200",
+            responseParameters: normalResponseParameters,
+          }, {
+            statusCode: "206",
+            selectionPattern: "206",
+            responseParameters: normalResponseParameters,
+          }, {
+            statusCode: "304",
+            selectionPattern: "304",
+            responseParameters: normalResponseParameters,
+          }, {
+            statusCode: "400",
+            selectionPattern: "4\\d{2}",
+            responseParameters: errorResponseParameters,
+          }, {
+            statusCode: "500",
+            selectionPattern: "5\\d{2}",
+            responseParameters: errorResponseParameters,
           },
-        }, {
-          statusCode: "400",
-          selectionPattern: "4\\d{2}",
-          responseParameters: {
-            'method.response.header.Content-Length': 'integration.response.header.Content-Length',
-            'method.response.header.Content-Type': 'integration.response.header.Content-Type',
-          },
-        }, {
-          statusCode: "500",
-          selectionPattern: "5\\d{2}",
-          responseParameters: {
-            'method.response.header.Content-Length': 'integration.response.header.Content-Length',
-            'method.response.header.Content-Type': 'integration.response.header.Content-Type',
-          },
-        }],
+        ],
       },
     }), {
       ...methodOptions,
-      requestParameters: pathParameters.reduce((result, name) => {
-        result[`method.request.path.${name}`] = true;
-        return result;
-      }, {} as { [param: string]: true }),
-      methodResponses: [{
-        statusCode: "200",
-        responseParameters: {
-          'method.response.header.Accept-Ranges': true,
-          'method.response.header.Cache-Control': true,
-          'method.response.header.Content-Disposition': true,
-          'method.response.header.Content-Encoding': true,
-          'method.response.header.Content-Language': true,
-          'method.response.header.Content-Length': true,
-          'method.response.header.Content-Range': true,
-          'method.response.header.Content-Type': true,
-          'method.response.header.Date': true,
-          'method.response.header.ETag': true,
-          'method.response.header.Expires': true,
-          'method.response.header.Last-Modified': true,
+      requestParameters: RestApiBuilder.booleanMapForValue(requestParameters),
+      methodResponses: [
+        {
+          statusCode: "200",
+          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
+        }, {
+          statusCode: "206",
+          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
+        }, {
+          statusCode: "304",
+          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
+        }, {
+          statusCode: "400",
+          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
+        }, {
+          statusCode: "500",
+          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
         },
-      }, {
-        statusCode: "400",
-        responseParameters: {
-          'method.response.header.Content-Length': true,
-          'method.response.header.Content-Type': true,
-        },
-      }, {
-        statusCode: "500",
-        responseParameters: {
-          'method.response.header.Content-Length': true,
-          'method.response.header.Content-Type': true,
-        },
-      }],
+      ],
     });
+  }
+
+  private static booleanMapForKey(stringToStringMap: { [name: string]: string }): { [name: string]: boolean } {
+    return Object.keys(stringToStringMap).reduce((result, key) => {
+      result[key] = true;
+      return result;
+    }, {} as { [name: string]: boolean });
+  }
+
+  private static booleanMapForValue(stringToStringMap: { [name: string]: string }): { [name: string]: boolean } {
+    return Object.values(stringToStringMap).reduce((result, key) => {
+      result[key] = true;
+      return result;
+    }, {} as { [name: string]: boolean });
   }
 }
