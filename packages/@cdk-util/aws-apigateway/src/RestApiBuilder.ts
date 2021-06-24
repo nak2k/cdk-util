@@ -187,6 +187,96 @@ export class RestApiBuilder {
     });
   }
 
+  putS3Integration(path: string | readonly string[], props: S3IntegrationProps) {
+    if (typeof path !== 'string') {
+      path.forEach(path => this.getS3Integration(path, props));
+      return this;
+    }
+
+    if (path.match(/\+}/)) {
+      throw new Error(`The greedy path ${path} can not be specified in the S3 intergration`);
+    }
+
+    const {
+      bucket,
+      path: integrationPath = path,
+      role: credentialsRole = this.defaultRole,
+      ...methodOptions
+    } = props;
+
+    if (!credentialsRole) {
+      throw new Error("The role must be specified in the S3 intergration");
+    }
+
+    const pathParameters = path.match(/(?<=\{)[^}]+(?=\})/g) || [];
+
+    const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
+    for (const paramName of s3pathParameters) {
+      if (!pathParameters.includes(paramName)) {
+        throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
+      }
+    }
+
+    const requestParameters: { [dest: string]: string; } = {
+      "integration.request.header.Cache-Control": "method.request.header.Cache-Control",
+      "integration.request.header.Content-Disposition": "method.request.header.Content-Disposition",
+      "integration.request.header.Content-Language": "method.request.header.Content-Language",
+      "integration.request.header.Expires": "method.request.header.Expires",
+    };
+
+    pathParameters.forEach(name =>
+      requestParameters[`integration.request.path.${name}`] = `method.request.path.${name}`
+    );
+
+    const normalResponseParameters = {
+      'method.response.header.ETag': 'integration.response.header.ETag',
+    };
+
+    const errorResponseParameters = {
+      'method.response.header.Content-Type': 'integration.response.header.Content-Type',
+    };
+
+    return this.put(path, new AwsIntegration({
+      service: "s3",
+      integrationHttpMethod: "PUT",
+      path: integrationPath,
+      subdomain: bucket.bucketName,
+      options: {
+        credentialsRole,
+        requestParameters,
+        integrationResponses: [
+          {
+            statusCode: "200",
+            responseParameters: normalResponseParameters,
+          }, {
+            statusCode: "400",
+            selectionPattern: "4\\d{2}",
+            responseParameters: errorResponseParameters,
+          }, {
+            statusCode: "500",
+            selectionPattern: "5\\d{2}",
+            responseParameters: errorResponseParameters,
+          },
+        ],
+      },
+    }), {
+      ...methodOptions,
+      requestParameters: RestApiBuilder.booleanMapForValue(requestParameters),
+      methodResponses: [
+        {
+          statusCode: "200",
+          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
+        }, {
+          statusCode: "400",
+          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
+        }, {
+          statusCode: "500",
+          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
+        },
+      ],
+    });
+  }
+
   private static booleanMapForKey(stringToStringMap: { [name: string]: string }): { [name: string]: boolean } {
     return Object.keys(stringToStringMap).reduce((result, key) => {
       result[key] = true;

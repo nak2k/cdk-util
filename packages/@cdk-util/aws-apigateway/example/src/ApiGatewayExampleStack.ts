@@ -1,6 +1,6 @@
 import { Construct, RemovalPolicy } from "@aws-cdk/core";
 import { DefaultEnvStack } from "@cdk-util/core";
-import { RestApi, MockIntegration, PassthroughBehavior } from "@aws-cdk/aws-apigateway";
+import { RestApi, MockIntegration, PassthroughBehavior, EndpointType } from "@aws-cdk/aws-apigateway";
 import { RestApiBuilder } from "@cdk-util/aws-apigateway";
 import { Bucket } from '@aws-cdk/aws-s3';
 import { BucketDeployment, Source } from "@aws-cdk/aws-s3-deployment";
@@ -27,9 +27,12 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
     });
 
-    bucket.grantRead(restApiRole);
+    bucket.grantReadWrite(restApiRole);
 
-    const restApi = new RestApi(this, "Example");
+    const restApi = new RestApi(this, "Example", {
+      endpointTypes: [EndpointType.REGIONAL],
+      binaryMediaTypes: ["image/*"],
+    });
 
     const mockIntegration = new MockIntegration({
       integrationResponses: [{
@@ -51,6 +54,7 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       .any("/", mockIntegration)
       .get("/{proxy+}", mockIntegration)
       .getS3Integration("/test/{dir}/{file}", { bucket })
+      .putS3Integration("/test/{dir}/{file}", { bucket })
       .getS3Integration("/test2/{a}/{b}/{c}", { bucket, path: "/test3/{a}/{c}" })
       .getS3Integration("/web/{file}", { bucket });
   }
