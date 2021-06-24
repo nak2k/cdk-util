@@ -10,3 +10,7 @@ Utilities for AWS CDK.
 - [@cdk-util/aws-lambda](packages/@cdk-util/aws-lambda)
 - [@cdk-util/aws-logs](packages/@cdk-util/aws-logs)
 - [@cdk-util/core](packages/@cdk-util/core)
+
+## License
+
+MIT

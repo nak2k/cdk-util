@@ -5,3 +5,7 @@
 ```
 npm i @cdk-util/aws-logs
 ```
+
+## License
+
+MIT

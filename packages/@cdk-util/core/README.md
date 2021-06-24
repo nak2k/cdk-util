@@ -5,3 +5,7 @@
 ```
 npm i @cdk-util/core
 ```
+
+## License
+
+MIT
