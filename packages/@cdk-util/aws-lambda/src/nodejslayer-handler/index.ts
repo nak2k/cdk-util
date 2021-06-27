@@ -107,7 +107,7 @@ async function deleteHandler(event: CloudFormationCustomResourceDeleteEvent): Pr
     PhysicalResourceId,
   } = event;
 
-  if (PhysicalResourceId === CREATE_FAILED_MARKER) {
+  if (PhysicalResourceId !== CREATE_FAILED_MARKER) {
     const lambda = new Lambda();
 
     const [, , , , , , LayerName, VersionNumber] = PhysicalResourceId.split(':');
