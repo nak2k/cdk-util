@@ -34,7 +34,7 @@ export class NodejsLayerExampleStack extends DefaultEnvStack {
     // Create the Lambda function.
     //
     new Function(this, "Function", {
-      runtime: Runtime.NODEJS_12_X,
+      runtime: Runtime.NODEJS_14_X,
       code: Code.fromAsset(lambdaPath, {
         exclude: ["package*.json", "node_modules", "tsconfig.json"],
         follow: FollowMode.ALWAYS,

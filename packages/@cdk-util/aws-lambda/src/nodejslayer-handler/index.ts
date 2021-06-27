@@ -1,14 +1,15 @@
-import type { CloudFormationCustomResourceEvent } from 'aws-lambda';
-import { Lambda, S3 } from 'aws-sdk';
-import { promises } from 'fs';
-import { spawn, SpawnOptions } from 'child_process';
-import { tmpdir } from 'os';
-import { zipFiles } from 'jszip-glob';
-import JSZip = require('jszip');
+import type {
+  CloudFormationCustomResourceCreateEvent,
+  CloudFormationCustomResourceDeleteEvent,
+  CloudFormationCustomResourceUpdateEvent,
+  CloudFormationCustomResourceEvent,
+  CloudFormationCustomResourceResponse,
+} from 'aws-lambda';
+import { CodeBuild, Lambda, AWSError } from 'aws-sdk';
+import { request } from 'https';
+import { URL } from 'url';
 
-const { rmdir, mkdir, writeFile } = promises;
-
-const TMPDIR = tmpdir();
+const CREATE_FAILED_MARKER = "CREATE_FAILED";
 
 export type HandlerResponse = undefined | {
   Data?: any;
@@ -26,90 +27,106 @@ interface NodejsLayerVersionProperties {
   NpmArgs: ReadonlyArray<string>;
 }
 
-export async function handler(event: CloudFormationCustomResourceEvent): Promise<HandlerResponse> {
-  return dispatcher(event).catch((err: Error) => {
+export async function handler(event: CloudFormationCustomResourceEvent): Promise<void> {
+  console.log("Event: %j", event);
+
+  try {
+    switch (event.RequestType) {
+      case 'Create':
+        await createHandler(event);
+        return;
+
+      case 'Update':
+        await updateHandler(event);
+        return;
+
+      case 'Delete':
+        await deleteHandler(event);
+        return;
+
+      default:
+        throw new Error(`Malformed event: Unknown request type ${(event as any).RequestType}`);
+    }
+  } catch (err) {
     console.error(err);
 
-    throw err;
-  });
+    await submitResponse({
+      ...event,
+      Status: 'FAILED',
+      PhysicalResourceId: event.RequestType === 'Create' ? CREATE_FAILED_MARKER : event.PhysicalResourceId,
+      Reason: err.stack,
+    }, event);
+  }
 }
 
-async function dispatcher(event: CloudFormationCustomResourceEvent): Promise<HandlerResponse> {
-  switch (event.RequestType) {
-    case 'Create': {
-      const {
-        StackId,
-        LogicalResourceId,
-        ResourceProperties,
-      } = event;
+async function createHandler(event: CloudFormationCustomResourceCreateEvent): Promise<void> {
+  const {
+    StackId, LogicalResourceId, ResourceProperties,
+  } = event;
 
-      const props = ResourceProperties as NodejsLayerVersionProperties;
+  const props = ResourceProperties as NodejsLayerVersionProperties;
 
-      validateProperties(props);
+  validateProperties(props);
 
-      const [, stackName] = StackId.split('/');
-      const layerName = `${stackName}-${LogicalResourceId}`;
+  const [, stackName] = StackId.split('/');
+  const layerName = `${stackName}-${LogicalResourceId}`;
 
-      const layerVersion = await publishLayer(layerName, props);
+  return startBuildLayer(layerName, event);
+}
 
-      return {
-        PhysicalResourceId: layerVersion.LayerVersionArn!,
-        Reason: `The lambda layer ${layerName} has been created`,
-      };
-    }
+async function updateHandler(event: CloudFormationCustomResourceUpdateEvent): Promise<void> {
+  const {
+    PhysicalResourceId,
+    ResourceProperties,
+    OldResourceProperties,
+  } = event;
 
-    case 'Update': {
-      const {
-        LogicalResourceId,
-        PhysicalResourceId,
-        ResourceProperties,
-        OldResourceProperties,
-      } = event;
+  const props = ResourceProperties as NodejsLayerVersionProperties;
+  const oldProps = OldResourceProperties as NodejsLayerVersionProperties;
 
-      const props = ResourceProperties as NodejsLayerVersionProperties;
-      const oldProps = OldResourceProperties as NodejsLayerVersionProperties;
+  validateProperties(props);
 
-      validateProperties(props);
+  const [, , , , , , LayerName] = PhysicalResourceId.split(':');
 
-      const [, , , , , , LayerName] = PhysicalResourceId.split(':');
-
-      if (props.Package.Bucket === oldProps.Package.Bucket &&
-        props.Package.Key === oldProps.Package.Key) {
-        if (equalArrays(props.NpmArgs, oldProps.NpmArgs)) {
-          return {
-            PhysicalResourceId,
-            Reason: `The lambda layer ${LayerName} has not been modified`,
-          };
-        }
-      }
-
-      const layerVersion = await publishLayer(LayerName, props);
-
-      return {
-        PhysicalResourceId: layerVersion.LayerVersionArn!,
-        Reason: `The lambda layer ${LayerName} has been updated`,
-      };
-    }
-
-    case 'Delete': {
-      const {
-        PhysicalResourceId,
-      } = event;
-
-      const lambda = new Lambda();
-
-      const [, , , , , , LayerName, VersionNumber] = PhysicalResourceId.split(':');
-
-      await lambda.deleteLayerVersion({
-        LayerName,
-        VersionNumber: parseInt(VersionNumber, 10),
-      }).promise();
-
-      return {
-        Reason: `The lambda layer ${PhysicalResourceId} has been deleted`,
-      };
+  if (props.Package.Bucket === oldProps.Package.Bucket &&
+    props.Package.Key === oldProps.Package.Key) {
+    if (equalArrays(props.NpmArgs, oldProps.NpmArgs)) {
+      return submitResponse({
+        ...event,
+        Status: 'SUCCESS',
+        Reason: `The lambda layer ${LayerName} has not been modified`,
+      }, event);
     }
   }
+
+  return startBuildLayer(LayerName, event);
+}
+
+async function deleteHandler(event: CloudFormationCustomResourceDeleteEvent): Promise<void> {
+  const {
+    PhysicalResourceId,
+  } = event;
+
+  if (PhysicalResourceId === CREATE_FAILED_MARKER) {
+    const lambda = new Lambda();
+
+    const [, , , , , , LayerName, VersionNumber] = PhysicalResourceId.split(':');
+
+    await lambda.deleteLayerVersion({
+      LayerName,
+      VersionNumber: parseInt(VersionNumber, 10),
+    }).promise().catch((err: AWSError) => {
+      if (err.code !== "ResourceNotFoundException") {
+        throw err;
+      }
+    });
+  }
+
+  return submitResponse({
+    ...event,
+    Status: 'SUCCESS',
+    Reason: `The lambda layer ${PhysicalResourceId} has been deleted`,
+  }, event);
 }
 
 function equalArrays<T>(lhs: readonly T[], rhs: readonly T[]) {
@@ -134,118 +151,111 @@ function validateProperties(props: NodejsLayerVersionProperties) {
   }
 }
 
-async function publishLayer(layerName: string, props: NodejsLayerVersionProperties) {
-  await rmdir(`${TMPDIR}/nodejs`, { recursive: true }).catch(_err => { });
-  await mkdir(`${TMPDIR}/nodejs`, { recursive: true });
+async function startBuildLayer(layerName: string, event: CloudFormationCustomResourceEvent): Promise<void> {
+  const { BUILDER_NAME } = process.env;
 
-  const { Package, NpmArgs } = props;
-
-  const s3 = new S3();
-
-  const s3Url = `s3://${Package.Bucket}/${Package.Key}`;
-
-  console.log(`Get S3 object ${s3Url}`);
-
-  const packageS3Object = await s3.getObject(Package).promise();
-
-  if (!packageS3Object.Body) {
-    throw new Error(`The S3 object ${s3Url} must not be empty`);
+  if (!BUILDER_NAME) {
+    throw new Error('The environment variable BUILDER_NAME must be specified');
   }
 
-  console.log('Load as the zip filie');
+  const PhysicalResourceId = event.RequestType === 'Create' ? CREATE_FAILED_MARKER : event.PhysicalResourceId;
 
-  const packageZip = await JSZip.loadAsync(packageS3Object.Body as any);
+  const {
+    StackId,
+    LogicalResourceId,
+    ResourceProperties,
+    RequestId,
+  } = event;
 
-  //
-  // Read package.json.
-  //
-  console.log(`Extract package.json`);
+  const props = ResourceProperties as NodejsLayerVersionProperties;
 
-  const packageJsonFile = packageZip.file('package.json');
-  if (!packageJsonFile) {
-    throw new Error(`package.json not found in the zip file`);
-  }
+  const codebuild = new CodeBuild();
 
-  const packageJsonStr = await packageJsonFile.async('string');
-  await writeFile(`${TMPDIR}/nodejs/package.json`, packageJsonStr);
-
-  let packageJson;
-
-  try {
-    packageJson = JSON.parse(packageJsonStr);
-  } catch (err) {
-    throw new Error(`The package.json is invalid JSON. ${err.message}`);
-  }
-
-  //
-  // Read package-lock.json.
-  //
-  console.log(`Extract package-lock.json`);
-
-  const packageLockJsonFile = packageZip.file('package-lock.json');
-  if (!packageLockJsonFile) {
-    throw new Error(`package-lock.json not found in the zip file`);
-  }
-
-  await writeFile(`${TMPDIR}/nodejs/package-lock.json`, await packageLockJsonFile.async('string'));
-
-  //
-  // Run npm.
-  //
-  await spawnPromise('npm', NpmArgs, {
-    cwd: `${TMPDIR}/nodejs`,
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      HOME: TMPDIR,
-    },
-  });
-
-  console.log('Find files that add to the zip file');
-
-  const zip = await zipFiles('nodejs/**/*', {
-    cwd: TMPDIR,
-    nodir: true,
-    ignore: ['nodejs/package.json', 'nodejs/package-lock.json'],
-    zip: new JSZip(),
-    compression: 'DEFLATE',
-    compressionOptions: {
-      level: 6,
-    }
-  });
-
-  console.log('Generate the zip file');
-
-  const ZipFile = await zip.generateAsync({ type: 'nodebuffer' });
-
-  console.log(`Publish the layer version ${layerName}`);
-
-  const lambda = new Lambda();
-
-  return lambda.publishLayerVersion({
-    LayerName: layerName,
-    Description: packageJson.name,
-    CompatibleRuntimes: ['nodejs'],
-    Content: {
-      ZipFile,
-    },
+  const startBuildData = await codebuild.startBuild({
+    projectName: BUILDER_NAME,
+    buildspecOverride: `
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: latest
+    commands:
+      - npm i -g npm
+  build:
+    commands:
+      - >
+        echo '{ "Status": "FAILED", "PhysicalResourceId": "${PhysicalResourceId}",
+        "StackId": "${StackId}", "RequestId": "${RequestId}", "LogicalResourceId": "${LogicalResourceId}" }'
+        > response.json
+      - >
+        aws s3 cp s3://${props.Package.Bucket}/${props.Package.Key} package.zip
+      - unzip -x package.zip -d nodejs
+      - npm ${props.NpmArgs.join(' ')} --prefix nodejs
+      - zip -r code nodejs -x nodejs/package*
+      - >
+        aws lambda publish-layer-version --layer-name ${layerName}
+        --description "$(jq -r '.name' nodejs/package.json)"
+        --compatible-runtimes nodejs
+        --zip-file fileb://code.zip
+        > result.json
+      - >
+        echo "$(jq '.Status="SUCCESS" | .PhysicalResourceId="'$(jq -r '.LayerVersionArn' result.json)'"' response.json)"
+        > response.json
+    finally:
+      - >
+        curl -sS -X PUT -H 'content-type: application/json' -d "$(cat response.json)" '${event.ResponseURL}'
+`,
   }).promise();
+
+  const buildId = startBuildData.build?.id;
+
+  if (!buildId) {
+    throw new Error(`Missing build ID`);
+  }
+
+  for (; ;) {
+    const { builds } = await codebuild.batchGetBuilds({
+      ids: [buildId],
+    }).promise();
+
+    if (!builds) {
+      throw new Error(`batchGetBuilds failed`);
+    }
+
+    switch (builds[0].buildStatus) {
+      case "SUCCEEDED":
+        return;
+      case "IN_PROGRESS":
+        await new Promise(resolve => {
+          setTimeout(resolve, 10000);
+        });
+        continue;
+      default:
+        throw new Error(`Builder failed`);
+    }
+  }
 }
 
-async function spawnPromise(cmd: string, args: readonly string[], options: SpawnOptions) {
-  console.log(`Spawn: ${cmd} ${args.join(' ')}`);
+async function submitResponse(response: CloudFormationCustomResourceResponse, event: CloudFormationCustomResourceEvent): Promise<void> {
+  const url = new URL(event.ResponseURL);
+  const body = JSON.stringify(response);
 
-  return new Promise<void>((resolve, reject) => {
-    spawn(cmd, args, options)
-      .on('exit', code => {
-        if (code !== 0) {
-          throw new Error(`Exit code is ${code}`);
-        }
-
+  return new Promise((resolve, reject) => {
+    const req = request(url, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+      },
+    }, res => {
+      if (res.statusCode === 200) {
         resolve();
-      })
-      .on('error', err => {
-        reject(err);
-      });
+      } else {
+        reject(new Error(`submitResponse failed: status code is ${res.statusCode}`));
+      }
+    });
+
+    req
+      .on('error', reject)
+      .end(body);
   });
 }
