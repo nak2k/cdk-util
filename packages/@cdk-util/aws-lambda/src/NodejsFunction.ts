@@ -8,6 +8,13 @@ import { join } from 'path';
 export interface NodejsFunctionProps extends Partial<FunctionProps>, Omit<NodejsLayerVersionProps, 'providerOnly'> {
 }
 
+/**
+ * The construct defines a Lambda Function and a Lambda Layer for NodeJS.
+ * 
+ * This construct requires package.json in a specified directory.
+ * To generate a Code asset, the directory that is specified
+ * with the `main` proparty of the package.json is used.
+ */
 export class NodejsFunction extends FunctionBase {
   readonly handler: Function;
   readonly nodejsLayerVersion: NodejsLayerVersion;

@@ -5,7 +5,14 @@ import { IBucket } from '@aws-cdk/aws-s3';
 type HttpMethod = 'HEAD' | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'ANY';
 
 export interface RestApiBuilderProps {
+  /**
+   * The RestApi that resources are added to.
+   */
   restApi: RestApi;
+
+  /**
+   * The default role that is used when AwsIntegration is set to RestApi.
+   */
   defaultRole?: IRole;
 }
 
