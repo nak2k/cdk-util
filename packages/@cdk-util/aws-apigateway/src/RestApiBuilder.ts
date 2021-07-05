@@ -17,8 +17,26 @@ export interface RestApiBuilderProps {
 }
 
 export type S3IntegrationProps = {
+  /**
+   * The S3 bucket that API Gateway sends integration requests to.
+   */
   bucket: IBucket;
+
+  /**
+   * The path to which the integration request is destination.
+   * 
+   * This path can include path paramters.
+   * The path parameters must be defined in the path of the resource.
+   * 
+   * @default It will be the same as the path of the resource.
+   */
   path?: string;
+
+  /**
+   * Tha IAM Role that is used when API Gateway calls S3 API.
+   * 
+   * @default The default role that is specified when RestApiBuilder is instanciated.
+   */
   role?: IRole;
 } & Omit<MethodOptions, "requestParameters" | "methodResponses">;
 
