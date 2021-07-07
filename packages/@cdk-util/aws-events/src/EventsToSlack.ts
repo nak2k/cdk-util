@@ -15,7 +15,7 @@ export class EventsToSlack extends Construct {
     super(scope, id);
 
     const handler = new Function(this, "handler", {
-      code: Code.fromAsset(__dirname + "./handler"),
+      code: Code.fromAsset(`${__dirname}/handler`),
       handler: "index.handler",
       runtime: Runtime.NODEJS_14_X,
       environment: {
