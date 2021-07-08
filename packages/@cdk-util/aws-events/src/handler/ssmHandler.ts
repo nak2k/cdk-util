@@ -1,7 +1,7 @@
-const { postSlackMessage } = require('./postSlackMessage');
-const { COLOR_MAP } = require('./constants');
+import { postSlackMessage } from './postSlackMessage';
+import { COLOR_MAP } from './constants';
 
-exports.ssmHandler = (event, context, callback) => {
+export async function ssmHandler(event: any, _context: any) {
   const {
     time,
     region,
@@ -25,5 +25,5 @@ exports.ssmHandler = (event, context, callback) => {
         ts: Date.parse(time) / 1000,
       },
     ],
-  }, callback);
-};
+  });
+}

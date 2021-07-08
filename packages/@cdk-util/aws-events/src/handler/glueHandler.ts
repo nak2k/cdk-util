@@ -1,7 +1,7 @@
-const { postSlackMessage } = require('./postSlackMessage');
-const { COLOR_MAP } = require('./constants');
+import { postSlackMessage, SlackMessage } from './postSlackMessage';
+import { COLOR_MAP } from './constants';
 
-exports.glueHandler = (event, context, callback) => {
+export async function glueHandler(event: any, _context: any) {
   const {
     time,
     region,
@@ -17,7 +17,7 @@ exports.glueHandler = (event, context, callback) => {
 
   const color = COLOR_MAP[state] || 'danger';
 
-  const slackMessage = {
+  const slackMessage: SlackMessage = {
     text: title,
     attachments: [
       {
@@ -41,5 +41,5 @@ exports.glueHandler = (event, context, callback) => {
     SLACK_ERROR_CHANNEL && (slackMessage.channel = SLACK_ERROR_CHANNEL);
   }
 
-  postSlackMessage(slackMessage, callback);
-};
+  await postSlackMessage(slackMessage);
+}
