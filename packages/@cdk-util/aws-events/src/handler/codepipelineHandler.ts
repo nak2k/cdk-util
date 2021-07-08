@@ -1,7 +1,8 @@
-const { postSlackMessage } = require('./postSlackMessage');
-const { COLOR_MAP } = require('./constants');
+import { postSlackMessage } from './postSlackMessage';
+import { COLOR_MAP } from './constants';
+import { CodePipelineCloudWatchPipelineEvent } from 'aws-lambda';
 
-exports.codepipelineHandler = (event, context, callback) => {
+export async function codepipelineHandler(event: CodePipelineCloudWatchPipelineEvent, _context: any) {
   const {
     time,
     region,
@@ -13,7 +14,7 @@ exports.codepipelineHandler = (event, context, callback) => {
 
   const title = `Pipeline \`${pipeline}\` is ${state}`;
 
-  postSlackMessage({
+  await postSlackMessage({
     text: title,
     attachments: [
       {
@@ -23,5 +24,5 @@ exports.codepipelineHandler = (event, context, callback) => {
         ts: Date.parse(time) / 1000,
       },
     ],
-  }, callback);
-};
+  });
+}

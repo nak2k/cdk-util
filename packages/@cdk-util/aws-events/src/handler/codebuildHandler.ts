@@ -1,8 +1,9 @@
-const { postSlackMessage } = require('./postSlackMessage');
-const { COLOR_MAP } = require('./constants');
-const AWS = require('aws-sdk');
+import { postSlackMessage, SlackMessage } from './postSlackMessage';
+import { COLOR_MAP } from './constants';
+import { CloudWatchLogs } from 'aws-sdk';
+import { CodeBuildCloudWatchStateEvent } from 'aws-lambda';
 
-exports.codebuildHandler = (event, context, callback) => {
+export async function codebuildHandler(event: CodeBuildCloudWatchStateEvent, _context: any) {
   const {
     time,
     region,
@@ -33,7 +34,7 @@ exports.codebuildHandler = (event, context, callback) => {
 
   const color = COLOR_MAP[buildStatus] || 'danger';
 
-  const message = {
+  const message: SlackMessage = {
     text: title,
     attachments: [
       {
@@ -53,13 +54,14 @@ exports.codebuildHandler = (event, context, callback) => {
   };
 
   if (buildStatus !== 'FAILED') {
-    return postSlackMessage(message, callback);
+    await postSlackMessage(message);
+    return;
   }
 
   /*
    * Add an error information to the message.
    */
-  const logs = new AWS.CloudWatchLogs();
+  const logs = new CloudWatchLogs();
 
   const params = {
     logGroupName,
@@ -67,22 +69,22 @@ exports.codebuildHandler = (event, context, callback) => {
     limit: 100,
   };
 
-  logs.getLogEvents(params, (err, data) => {
-    if (err) {
-      return callback(err);
-    }
+  const data = await logs.getLogEvents(params).promise();
 
-    const text = data.events.map(({ message }) => message).join('\n');
+  if (!data.events) {
+    return;
+  }
 
-    message.attachments.push({
-      color,
-      text,
-    });
+  const text = data.events.map(({ message }) => message).join('\n');
 
-    const { SLACK_ERROR_CHANNEL } = process.env;
-
-    SLACK_ERROR_CHANNEL && (message.channel = SLACK_ERROR_CHANNEL);
-
-    postSlackMessage(message, callback);
+  message.attachments.push({
+    color,
+    text,
   });
-};
+
+  const { SLACK_ERROR_CHANNEL } = process.env;
+
+  SLACK_ERROR_CHANNEL && (message.channel = SLACK_ERROR_CHANNEL);
+
+  await postSlackMessage(message);
+}

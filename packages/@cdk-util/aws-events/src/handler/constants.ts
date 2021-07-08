@@ -1,4 +1,4 @@
-exports.COLOR_MAP = {
+export const COLOR_MAP: { [status: string]: string } = {
   BOOTSTRAPPING: 'good',
   CANCELED: 'warning',
   CANCELLING: 'warning',
