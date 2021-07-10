@@ -5,8 +5,19 @@ import { LambdaFunction } from "@aws-cdk/aws-events-targets";
 import { PolicyStatement } from "@aws-cdk/aws-iam";
 
 export interface EventsToSlackProps {
+  /**
+   * The URL of an Incoming Webhook.
+   */
   webhookUrl: string;
+
+  /**
+   * Overwrite a channel that messages are sent to.
+   */
   channel?: string;
+
+  /**
+   * Overwrite a channel that error messages are sent to.
+   */
   errorChannel?: string;
 }
 
