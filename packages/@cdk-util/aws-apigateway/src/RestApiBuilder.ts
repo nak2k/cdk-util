@@ -58,41 +58,105 @@ export class RestApiBuilder {
     this.restApi.root.resourceForPath(path).addMethod(method, target, options);
   }
 
+  /**
+   * Define the HEAD method and the resource for the path.
+   * 
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   head(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "HEAD", target, options);
     return this;
   }
 
+  /**
+   * Define the GET method and the resource for the path.
+   *
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   get(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "GET", target, options);
     return this;
   }
 
+  /**
+   * Define the POST method and the resource for the path.
+   *
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   post(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "POST", target, options);
     return this;
   }
 
+  /**
+   * Define the PUT method and the resource for the path.
+   *
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   put(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "PUT", target, options);
     return this;
   }
 
+  /**
+   * Define the DELETE method and the resource for the path.
+   *
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   delete(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "DELETE", target, options);
     return this;
   }
 
+  /**
+   * Define the PATCH method and the resource for the path.
+   *
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   patch(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "PATCH", target, options);
     return this;
   }
 
+  /**
+   * Define the OPTIONS method and the resource for the path.
+   *
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   options(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "OPTIONS", target, options);
     return this;
   }
 
+  /**
+   * Define the ANY method and the resource for the path.
+   *
+   * @param path 
+   * @param target 
+   * @param options 
+   * @returns 
+   */
   any(path: string | readonly string[], target?: Integration, options?: MethodOptions) {
     this.addRoute(path, "ANY", target, options);
     return this;
