@@ -162,6 +162,13 @@ export class RestApiBuilder {
     return this;
   }
 
+  /**
+   * Define the GET method and the resource to invoke S3 GetObject API.
+   *
+   * @param path 
+   * @param props 
+   * @returns 
+   */
   getS3Integration(path: string | readonly string[], props: S3IntegrationProps) {
     if (typeof path !== 'string') {
       path.forEach(path => this.getS3Integration(path, props));
@@ -276,6 +283,13 @@ export class RestApiBuilder {
     });
   }
 
+  /**
+   * Define the PUT method and the resource to invoke S3 PutObject API.
+   *
+   * @param path 
+   * @param props 
+   * @returns 
+   */
   putS3Integration(path: string | readonly string[], props: S3IntegrationProps) {
     if (typeof path !== 'string') {
       path.forEach(path => this.getS3Integration(path, props));
