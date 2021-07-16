@@ -8,10 +8,11 @@
     "@aws-cdk/aws-ec2": "^1.110.0",
     "@aws-cdk/aws-lambda": "^1.110.0",
     "@aws-cdk/core": "^1.110.0",
-    "@cdk-util/aws-lambda": "file:../cdk-util-aws-lambda-0.2.6.tgz",
+    "@cdk-util/aws-lambda": "file:../cdk-util-aws-lambda-0.2.7.tgz",
     "@cdk-util/core": "^0.1.1",
     "@types/node": "^14.10.1",
     "aws-cdk": "^1.110.0",
+    "npm-install-from-local": "^0.2.0",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.0",
     "ts-node": "^9.0.0",
@@ -26,7 +27,12 @@
     "deploy": "run-s deploy:*",
     "deploy:FunctionExample": "cdk deploy NodejsFunctionExampleStack",
     "deploy:LayerExample": "cdk deploy NodejsLayerExampleStack",
-    "reinstall": "rimraf ../cdk-util-aws-lambda-*.tgz && (cd .. && npm pack) && npm uni @cdk-util/aws-lambda && npm i -D ../cdk-util-aws-lambda-*.tgz"
+    "postinstall": "npm-install-from-local install"
   },
-  "files": []
+  "files": [],
+  "npm-install-from-local": {
+    "devDependencies": {
+      "@cdk-util/aws-lambda": ".."
+    }
+  }
 }
