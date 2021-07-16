@@ -32,7 +32,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf lib",
+    "clean": "rimraf lib *.tgz",
     "prepublishOnly": "run-s test",
     "postpublish": "npm-sns",
     "pretest": "run-s clean build",
