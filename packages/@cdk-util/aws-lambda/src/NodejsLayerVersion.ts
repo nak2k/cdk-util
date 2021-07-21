@@ -1,9 +1,9 @@
 import { Code, Function, ILayerVersion, LayerVersion, Runtime } from '@aws-cdk/aws-lambda';
 import { Asset } from '@aws-cdk/aws-s3-assets';
 import { Construct, CustomResource, Duration, Stack } from '@aws-cdk/core';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { createDirSync } from 'mktemp';
-import { copyFileSync } from 'fs';
+import { copyFileSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { BuildSpec, LinuxBuildImage, Project } from '@aws-cdk/aws-codebuild';
 import { PolicyStatement } from '@aws-cdk/aws-iam';
@@ -155,12 +155,50 @@ export class NodejsLayerVersion extends Construct {
 
   private createAsset(packageDirectory: string) {
     const tmpDir = createDirSync(join(tmpdir(), 'cdk-util-aws-lambda-XXXXXXXX'));
+    const pkgJsonPath = join(tmpDir, 'package.json');
+    const pkgLockJsonPath = join(tmpDir, 'package-lock.json');
 
-    copyFileSync(join(packageDirectory, 'package.json'), join(tmpDir, 'package.json'));
-    copyFileSync(join(packageDirectory, 'package-lock.json'), join(tmpDir, 'package-lock.json'));
+    copyFileSync(join(packageDirectory, 'package.json'), pkgJsonPath);
+    copyFileSync(join(packageDirectory, 'package-lock.json'), pkgLockJsonPath);
+
+    const pkg = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
+    const { dependencies, devDependencies } = pkg;
+    let modified = false;
+
+    if (dependencies) {
+      processDependencies(dependencies);
+    }
+
+    if (devDependencies) {
+      processDependencies(devDependencies);
+    }
+
+    if (modified) {
+      writeFileSync(pkgJsonPath, JSON.stringify(pkg, null, 2));
+    }
 
     return new Asset(this, 'asset', {
       path: tmpDir,
     });
+
+    function processDependencies(dependencies: { [name: string]: string }) {
+      Object.entries(dependencies).forEach(([name, value]) => {
+        if (!value.startsWith("file:")) {
+          return;
+        }
+
+        if (!value.endsWith(".tgz")) {
+          throw new Error(`The local path ${value} is not a path to tarball, not supported yet`);
+        }
+
+        const tarballPath = value.substr(5);
+        const tarballBasename = basename(tarballPath);
+        copyFileSync(join(packageDirectory, tarballPath), join(tmpDir, tarballBasename));
+
+        dependencies[name] = `file:${tarballBasename}`;
+
+        modified = true;
+      });
+    }
   }
 }

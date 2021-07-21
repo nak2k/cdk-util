@@ -191,7 +191,7 @@ phases:
         aws s3 cp s3://${props.Package.Bucket}/${props.Package.Key} package.zip
       - unzip -x package.zip -d nodejs
       - npm ${props.NpmArgs.join(' ')} --prefix nodejs
-      - zip -r code nodejs -x nodejs/package*
+      - zip -r code nodejs -x nodejs/package* nodejs/*.tgz
       - >
         aws lambda publish-layer-version --layer-name ${layerName}
         --description "$(jq -r '.name' nodejs/package.json)"
