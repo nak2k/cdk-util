@@ -1,0 +1,36 @@
+{
+  "name": "@cdk-util/aws-cognito-example",
+  "version": "0.1.0",
+  "private": true,
+  "description": "aws-cognito example",
+  "author": "Kengo Nakatsuka <kengo.nakatsuka@gmail.com>",
+  "devDependencies": {
+    "@aws-cdk/aws-cognito": "^1.117.0",
+    "@aws-cdk/core": "^1.117.0",
+    "@cdk-util/aws-cognito": "file:../cdk-util-aws-cognito-0.1.0.tgz",
+    "@cdk-util/core": "^0.1.1",
+    "@types/node": "^14.10.1",
+    "aws-cdk": "^1.117.0",
+    "npm-install-from-local": "^0.2.0",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.0",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nak2k/cdk-util.git"
+  },
+  "scripts": {
+    "clean": "rimraf cdk.out",
+    "deploy": "run-s deploy:*",
+    "deploy:CognitoExample": "cdk deploy CognitoExampleStack",
+    "preinstall": "npm-install-from-local install"
+  },
+  "files": [],
+  "npm-install-from-local": {
+    "devDependencies": {
+      "@cdk-util/aws-cognito": ".."
+    }
+  }
+}
