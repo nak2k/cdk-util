@@ -28,7 +28,7 @@
     "clean": "rimraf cdk.out",
     "deploy": "run-s deploy:*",
     "deploy:ApiGatewayExample": "cdk deploy ApiGatewayExampleStack",
-    "postinstall": "npm-install-from-local install"
+    "preinstall": "npm-install-from-local install"
   },
   "files": [],
   "npm-install-from-local": {

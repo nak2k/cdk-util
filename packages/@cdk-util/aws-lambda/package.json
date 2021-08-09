@@ -45,8 +45,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rimraf lib *.tgz",
-    "prepack": "npm t",
-    "prepublishOnly": "run-s test",
+    "prepare": "npm t",
     "postpublish": "npm-sns",
     "pretest": "run-s clean build",
     "test": "",

@@ -27,7 +27,7 @@
     "deploy": "run-s deploy:*",
     "deploy:FunctionExample": "cdk deploy NodejsFunctionExampleStack",
     "deploy:LayerExample": "cdk deploy NodejsLayerExampleStack",
-    "postinstall": "npm-install-from-local install"
+    "preinstall": "npm-install-from-local install"
   },
   "files": [],
   "npm-install-from-local": {

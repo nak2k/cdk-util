@@ -23,7 +23,7 @@
   "scripts": {
     "clean": "rimraf cdk.out",
     "deploy": "cdk deploy PreparedLogGroupExampleStack",
-    "postinstall": "npm-install-from-local install"
+    "preinstall": "npm-install-from-local install"
   },
   "files": [],
   "npm-install-from-local": {
