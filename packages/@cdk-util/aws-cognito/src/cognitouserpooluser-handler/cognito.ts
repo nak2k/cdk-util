@@ -42,6 +42,20 @@ export async function cognitoCreateUser(options: {
   return Username;
 }
 
+/**
+ * Get a password from Secret Manager, or generate it.
+ * 
+ * If options.SecretId is specified, this function returns the password from Secret Manager.
+ * 
+ * If options.PasswordParameterName is specified, this function generates the password
+ * by calling getRandomPassword() of Secret Manager, and store it with a specified parameter name
+ * to Systems Manager Parameter Store.
+ * 
+ * Otherwise, return undefined.
+ * 
+ * @param options 
+ * @returns 
+ */
 async function getPassword(options: {
   PasswordLength?: number;
   SecretId?: string;
@@ -77,6 +91,12 @@ async function getPassword(options: {
   }
 }
 
+/**
+ * Get a secret from Secret Manager.
+ * 
+ * @param secretId 
+ * @returns 
+ */
 async function getSecret(secretId: string): Promise<{ password: string }> {
   const secretsmanager = new SecretsManager();
 
@@ -96,6 +116,14 @@ async function getSecret(secretId: string): Promise<{ password: string }> {
   }
 }
 
+/**
+ * Delete a cognito user.
+ * 
+ * If the user does not exist, do nothing.
+ * 
+ * @param options 
+ * @returns 
+ */
 export async function cognitoDeleteUser(options: {
   UserPoolId: string;
   Username: string;
