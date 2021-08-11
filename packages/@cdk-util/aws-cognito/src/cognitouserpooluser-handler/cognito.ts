@@ -9,8 +9,6 @@ export async function cognitoCreateUser(options: {
   SecretId?: string;
   PasswordParameterName?: string;
 }) {
-  const Password = await getPassword(options);
-
   const { UserPoolId, Username } = options;
 
   await cognito.adminCreateUser({
@@ -18,28 +16,40 @@ export async function cognitoCreateUser(options: {
     Username,
   }).promise();
 
-  if (!Password) {
-    return Username;
-  }
-
-  try {
-    await cognito.adminSetUserPassword({
-      UserPoolId,
-      Username,
-      Password,
-      Permanent: true,
-    }).promise();
-  } catch (err) {
-    await cognitoDeleteUser({
+  await cognitoSetUserPassword(options).catch(err =>
+    cognitoDeleteUser({
       UserPoolId,
       Username,
     }).finally(() => {
       // Rethrow the original exception regardless of whether the user deletion was successful or not.
       throw err;
-    });
-  }
+    })
+  );
 
   return Username;
+}
+
+export async function cognitoSetUserPassword(options: {
+  UserPoolId: string;
+  Username: string;
+  PasswordLength?: number;
+  SecretId?: string;
+  PasswordParameterName?: string;
+}) {
+  const Password = await getPassword(options);
+
+  if (!Password) {
+    return;
+  }
+
+  const { UserPoolId, Username } = options;
+
+  await cognito.adminSetUserPassword({
+    UserPoolId,
+    Username,
+    Password,
+    Permanent: true,
+  }).promise();
 }
 
 /**
