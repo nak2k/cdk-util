@@ -1,4 +1,4 @@
-import { RestApi, Integration, MethodOptions, AwsIntegration } from "@aws-cdk/aws-apigateway";
+import { RestApi, Integration, MethodOptions, AwsIntegration, IntegrationResponse, MethodResponse } from "@aws-cdk/aws-apigateway";
 import { IRole } from "@aws-cdk/aws-iam";
 import { IBucket } from '@aws-cdk/aws-s3';
 
@@ -228,6 +228,29 @@ export class RestApiBuilder {
       'method.response.header.Content-Type': 'integration.response.header.Content-Type',
     };
 
+    const integrationResponses = [
+      {
+        statusCode: "200",
+        responseParameters: normalResponseParameters,
+      }, {
+        statusCode: "206",
+        selectionPattern: "206",
+        responseParameters: normalResponseParameters,
+      }, {
+        statusCode: "304",
+        selectionPattern: "304",
+        responseParameters: normalResponseParameters,
+      }, {
+        statusCode: "400",
+        selectionPattern: "4\\d{2}",
+        responseParameters: errorResponseParameters,
+      }, {
+        statusCode: "500",
+        selectionPattern: "5\\d{2}",
+        responseParameters: errorResponseParameters,
+      },
+    ];
+
     return this.get(path, new AwsIntegration({
       service: "s3",
       integrationHttpMethod: "GET",
@@ -236,50 +259,12 @@ export class RestApiBuilder {
       options: {
         credentialsRole,
         requestParameters,
-        integrationResponses: [
-          {
-            statusCode: "200",
-            responseParameters: normalResponseParameters,
-          }, {
-            statusCode: "206",
-            selectionPattern: "206",
-            responseParameters: normalResponseParameters,
-          }, {
-            statusCode: "304",
-            selectionPattern: "304",
-            responseParameters: normalResponseParameters,
-          }, {
-            statusCode: "400",
-            selectionPattern: "4\\d{2}",
-            responseParameters: errorResponseParameters,
-          }, {
-            statusCode: "500",
-            selectionPattern: "5\\d{2}",
-            responseParameters: errorResponseParameters,
-          },
-        ],
+        integrationResponses,
       },
     }), {
       ...methodOptions,
       requestParameters: RestApiBuilder.booleanMapForValue(requestParameters),
-      methodResponses: [
-        {
-          statusCode: "200",
-          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
-        }, {
-          statusCode: "206",
-          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
-        }, {
-          statusCode: "304",
-          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
-        }, {
-          statusCode: "400",
-          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
-        }, {
-          statusCode: "500",
-          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
-        },
-      ],
+      methodResponses: RestApiBuilder.methodResponsesFrom(integrationResponses),
     });
   }
 
@@ -339,6 +324,21 @@ export class RestApiBuilder {
       'method.response.header.Content-Type': 'integration.response.header.Content-Type',
     };
 
+    const integrationResponses = [
+      {
+        statusCode: "200",
+        responseParameters: normalResponseParameters,
+      }, {
+        statusCode: "400",
+        selectionPattern: "4\\d{2}",
+        responseParameters: errorResponseParameters,
+      }, {
+        statusCode: "500",
+        selectionPattern: "5\\d{2}",
+        responseParameters: errorResponseParameters,
+      },
+    ];
+
     return this.put(path, new AwsIntegration({
       service: "s3",
       integrationHttpMethod: "PUT",
@@ -347,37 +347,20 @@ export class RestApiBuilder {
       options: {
         credentialsRole,
         requestParameters,
-        integrationResponses: [
-          {
-            statusCode: "200",
-            responseParameters: normalResponseParameters,
-          }, {
-            statusCode: "400",
-            selectionPattern: "4\\d{2}",
-            responseParameters: errorResponseParameters,
-          }, {
-            statusCode: "500",
-            selectionPattern: "5\\d{2}",
-            responseParameters: errorResponseParameters,
-          },
-        ],
+        integrationResponses,
       },
     }), {
       ...methodOptions,
       requestParameters: RestApiBuilder.booleanMapForValue(requestParameters),
-      methodResponses: [
-        {
-          statusCode: "200",
-          responseParameters: RestApiBuilder.booleanMapForKey(normalResponseParameters),
-        }, {
-          statusCode: "400",
-          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
-        }, {
-          statusCode: "500",
-          responseParameters: RestApiBuilder.booleanMapForKey(errorResponseParameters),
-        },
-      ],
+      methodResponses: RestApiBuilder.methodResponsesFrom(integrationResponses),
     });
+  }
+
+  public static methodResponsesFrom(integrationResponses: IntegrationResponse[]): MethodResponse[] {
+    return integrationResponses.map(ir => ({
+      statusCode: ir.statusCode,
+      responseParameters: RestApiBuilder.booleanMapForKey(ir.responseParameters ?? {}),
+    }));
   }
 
   private static booleanMapForKey(stringToStringMap: { [name: string]: string }): { [name: string]: boolean } {
