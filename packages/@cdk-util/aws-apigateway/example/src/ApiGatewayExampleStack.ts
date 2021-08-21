@@ -1,7 +1,7 @@
 import { Construct, RemovalPolicy } from "@aws-cdk/core";
 import { DefaultEnvStack } from "@cdk-util/core";
 import { RestApi, MockIntegration, PassthroughBehavior, EndpointType } from "@aws-cdk/aws-apigateway";
-import { RestApiBuilder } from "@cdk-util/aws-apigateway";
+import { JSONMockIntegration, RestApiBuilder, TextMockIntegration } from "@cdk-util/aws-apigateway";
 import { Bucket } from '@aws-cdk/aws-s3';
 import { BucketDeployment, Source } from "@aws-cdk/aws-s3-deployment";
 import { Role, ServicePrincipal } from '@aws-cdk/aws-iam';
@@ -30,6 +30,7 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
     bucket.grantReadWrite(restApiRole);
 
     const restApi = new RestApi(this, "Example", {
+      restApiName: "ApiGatewayExample",
       endpointTypes: [EndpointType.REGIONAL],
       binaryMediaTypes: ["image/*"],
     });
@@ -44,6 +45,10 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       },
     });
 
+    const textMockIntegration = new TextMockIntegration({ body: "Hello" });
+
+    const jsonMockIntegration = new JSONMockIntegration({ body: { foo: "bar" } });
+
     new RestApiBuilder({ restApi, defaultRole: restApiRole })
       .get([
         "/users/{userId}",
@@ -51,8 +56,21 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       ], mockIntegration, {
         methodResponses: [{ statusCode: '200' }],
       })
-      .any("/", mockIntegration)
-      .get("/{proxy+}", mockIntegration)
+      .get("/",
+        textMockIntegration,
+        {
+          methodResponses: textMockIntegration.methodResponses,
+        }
+      )
+      .get("/json",
+        jsonMockIntegration,
+        {
+          methodResponses: textMockIntegration.methodResponses,
+        }
+      )
+      .get("/{proxy+}", mockIntegration, {
+        methodResponses: [{ statusCode: '200' }],
+      })
       .getS3Integration("/test/{dir}/{file}", { bucket })
       .putS3Integration("/test/{dir}/{file}", { bucket })
       .getS3Integration("/test2/{a}/{b}/{c}", { bucket, path: "/test3/{a}/{c}" })
