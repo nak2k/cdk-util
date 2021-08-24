@@ -1,7 +1,7 @@
 import { Construct, RemovalPolicy } from "@aws-cdk/core";
 import { DefaultEnvStack } from "@cdk-util/core";
 import { RestApi, MockIntegration, PassthroughBehavior, EndpointType } from "@aws-cdk/aws-apigateway";
-import { JSONMockIntegration, RestApiBuilder, TextMockIntegration } from "@cdk-util/aws-apigateway";
+import { JSONMockIntegration, RedirectMockIntegration, RestApiBuilder, TextMockIntegration } from "@cdk-util/aws-apigateway";
 import { Bucket } from '@aws-cdk/aws-s3';
 import { BucketDeployment, Source } from "@aws-cdk/aws-s3-deployment";
 import { Role, ServicePrincipal } from '@aws-cdk/aws-iam';
@@ -49,6 +49,8 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
 
     const jsonMockIntegration = new JSONMockIntegration({ body: { foo: "bar" } });
 
+    const redirectMockIntegration = new RedirectMockIntegration({ location: "https://google.com" });
+
     new RestApiBuilder({ restApi, defaultRole: restApiRole })
       .get([
         "/users/{userId}",
@@ -66,6 +68,12 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
         jsonMockIntegration,
         {
           methodResponses: textMockIntegration.methodResponses,
+        }
+      )
+      .get("/redirect",
+        redirectMockIntegration,
+        {
+          methodResponses: redirectMockIntegration.methodResponses,
         }
       )
       .get("/{proxy+}", mockIntegration, {
