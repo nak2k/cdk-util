@@ -2,7 +2,9 @@ import { MethodResponse, MockIntegration, PassthroughBehavior } from "@aws-cdk/a
 import { RestApiBuilder } from "./RestApiBuilder";
 
 export interface TextMockIntegrationOptions {
-  body: string;
+  body?: string;
+
+  responseTemplate?: string;
 
   /**
    * The value of the content-type header.
@@ -18,14 +20,19 @@ export class TextMockIntegration extends MockIntegration {
   constructor(options: TextMockIntegrationOptions) {
     const {
       body,
+      responseTemplate,
       contentType = "text/plain",
     } = options;
+
+    if ((body !== undefined) === (responseTemplate !== undefined)) {
+      throw new Error('Either "body" or "responseTemplate must be specified');
+    }
 
     const integrationResponses = [
       {
         statusCode: "200",
         responseTemplates: {
-          "application/json": `#[[${body}]]#`,
+          "application/json": responseTemplate ?? `#[[${body}]]#`,
         },
         responseParameters: {
           "method.response.header.Content-Type": `'${contentType}'`,

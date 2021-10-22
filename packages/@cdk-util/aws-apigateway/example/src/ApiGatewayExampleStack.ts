@@ -51,6 +51,24 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
 
     const redirectMockIntegration = new RedirectMockIntegration({ location: "https://google.com" });
 
+    const templateMockIntegration = new TextMockIntegration({
+      responseTemplate: `{
+    "stage" : "$context.stage",
+    "request_id" : "$context.requestId",
+    "api_id" : "$context.apiId",
+    "resource_path" : "$context.resourcePath",
+    "resource_id" : "$context.resourceId",
+    "http_method" : "$context.httpMethod",
+    "source_ip" : "$context.identity.sourceIp",
+    "user-agent" : "$context.identity.userAgent",
+    "account_id" : "$context.identity.accountId",
+    "api_key" : "$context.identity.apiKey",
+    "caller" : "$context.identity.caller",
+    "user" : "$context.identity.user",
+    "user_arn" : "$context.identity.userArn"
+}`,
+    });
+
     new RestApiBuilder({ restApi, defaultRole: restApiRole })
       .get([
         "/users/{userId}",
@@ -67,13 +85,19 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       .get("/json",
         jsonMockIntegration,
         {
-          methodResponses: textMockIntegration.methodResponses,
+          methodResponses: jsonMockIntegration.methodResponses,
         }
       )
       .get("/redirect",
         redirectMockIntegration,
         {
           methodResponses: redirectMockIntegration.methodResponses,
+        }
+      )
+      .get("/test-template",
+        templateMockIntegration,
+        {
+          methodResponses: templateMockIntegration.methodResponses,
         }
       )
       .get("/{proxy+}", mockIntegration, {
