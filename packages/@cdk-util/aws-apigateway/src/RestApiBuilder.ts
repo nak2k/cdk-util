@@ -38,6 +38,14 @@ export type S3IntegrationProps = {
    * @default The default role that is specified when RestApiBuilder is instanciated.
    */
   role?: IRole;
+
+  readonly requestParameters?: {
+    [dest: string]: string;
+  };
+
+  readonly requestTemplates?: {
+    [contentType: string]: string;
+  };
 } & Omit<MethodOptions, "requestParameters" | "methodResponses">;
 
 export class RestApiBuilder {
@@ -183,6 +191,8 @@ export class RestApiBuilder {
       bucket,
       path: integrationPath = path,
       role: credentialsRole = this.defaultRole,
+      requestParameters: additionalRequestParameters = {},
+      requestTemplates,
       ...methodOptions
     } = props;
 
@@ -205,6 +215,7 @@ export class RestApiBuilder {
       "integration.request.header.If-None-Match": "method.request.header.If-None-Match",
       "integration.request.header.If-Unmodified-Since": "method.request.header.If-Unmodified-Since",
       "integration.request.header.Range": "method.request.header.Range",
+      ...additionalRequestParameters,
     };
 
     pathParameters.forEach(name =>
@@ -259,6 +270,7 @@ export class RestApiBuilder {
       options: {
         credentialsRole,
         requestParameters,
+        requestTemplates,
         integrationResponses,
       },
     }), {
@@ -289,6 +301,8 @@ export class RestApiBuilder {
       bucket,
       path: integrationPath = path,
       role: credentialsRole = this.defaultRole,
+      requestParameters: additionalRequestParameters = {},
+      requestTemplates,
       ...methodOptions
     } = props;
 
@@ -310,6 +324,7 @@ export class RestApiBuilder {
       "integration.request.header.Content-Disposition": "method.request.header.Content-Disposition",
       "integration.request.header.Content-Language": "method.request.header.Content-Language",
       "integration.request.header.Expires": "method.request.header.Expires",
+      ...additionalRequestParameters,
     };
 
     pathParameters.forEach(name =>
@@ -347,6 +362,7 @@ export class RestApiBuilder {
       options: {
         credentialsRole,
         requestParameters,
+        requestTemplates,
         integrationResponses,
       },
     }), {
