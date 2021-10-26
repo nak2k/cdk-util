@@ -106,6 +106,13 @@ export class ApiGatewayExampleStack extends DefaultEnvStack {
       .getS3Integration("/test/{dir}/{file}", { bucket })
       .putS3Integration("/test/{dir}/{file}", { bucket })
       .getS3Integration("/test2/{a}/{b}/{c}", { bucket, path: "/test3/{a}/{c}" })
-      .getS3Integration("/web/{file}", { bucket });
+      .getS3Integration("/web/{file}", { bucket })
+      .getS3Integration("/web", {
+        bucket,
+        path: "/web/{file}",
+        requestTemplates: {
+          "application/json": '#set($context.requestOverride.path.file = "index.html")',
+        },
+      });
   }
 }
