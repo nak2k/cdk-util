@@ -191,7 +191,7 @@ export class RestApiBuilder {
       bucket,
       path: integrationPath = path,
       role: credentialsRole = this.defaultRole,
-      requestParameters: additionalRequestParameters = {},
+      requestParameters: additionalRequestParameters,
       requestTemplates,
       ...methodOptions
     } = props;
@@ -200,27 +200,33 @@ export class RestApiBuilder {
       throw new Error("The role must be specified in the S3 intergration");
     }
 
-    const pathParameters = path.match(/(?<=\{)[^}]+(?=\})/g) || [];
-
-    const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
-    for (const paramName of s3pathParameters) {
-      if (!pathParameters.includes(paramName)) {
-        throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
-      }
-    }
-
     const requestParameters: { [dest: string]: string; } = {
       "integration.request.header.If-Match": "method.request.header.If-Match",
       "integration.request.header.If-Modified-Since": "method.request.header.If-Modified-Since",
       "integration.request.header.If-None-Match": "method.request.header.If-None-Match",
       "integration.request.header.If-Unmodified-Since": "method.request.header.If-Unmodified-Since",
       "integration.request.header.Range": "method.request.header.Range",
-      ...additionalRequestParameters,
     };
 
+    const pathParameters = path.match(/(?<=\{)[^}]+(?=\})/g) || [];
     pathParameters.forEach(name =>
       requestParameters[`integration.request.path.${name}`] = `method.request.path.${name}`
     );
+
+    const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
+    for (const paramName of s3pathParameters) {
+      if (!pathParameters.includes(paramName)) {
+        if (!requestTemplates) {
+          throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
+        } else {
+          requestParameters[`integration.request.path.${paramName}`] = `method.request.path.${paramName}`
+        }
+      }
+    }
+
+    if (additionalRequestParameters) {
+      Object.assign(requestParameters, additionalRequestParameters);
+    }
 
     const normalResponseParameters = {
       'method.response.header.Accept-Ranges': 'integration.response.header.Accept-Ranges',
@@ -310,26 +316,31 @@ export class RestApiBuilder {
       throw new Error("The role must be specified in the S3 intergration");
     }
 
-    const pathParameters = path.match(/(?<=\{)[^}]+(?=\})/g) || [];
-
-    const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
-    for (const paramName of s3pathParameters) {
-      if (!pathParameters.includes(paramName)) {
-        throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
-      }
-    }
-
     const requestParameters: { [dest: string]: string; } = {
       "integration.request.header.Cache-Control": "method.request.header.Cache-Control",
       "integration.request.header.Content-Disposition": "method.request.header.Content-Disposition",
       "integration.request.header.Content-Language": "method.request.header.Content-Language",
       "integration.request.header.Expires": "method.request.header.Expires",
-      ...additionalRequestParameters,
     };
 
+    const pathParameters = path.match(/(?<=\{)[^}]+(?=\})/g) || [];
     pathParameters.forEach(name =>
       requestParameters[`integration.request.path.${name}`] = `method.request.path.${name}`
     );
+
+    const s3pathParameters = integrationPath.match(/(?<=\{)[^}]+(?=\})/g) || [];
+    for (const paramName of s3pathParameters) {
+      if (!pathParameters.includes(paramName)) {
+        if (!requestTemplates) {
+          throw new Error(`The path parameter "${paramName}" is not exists in the path "${path}"`);
+        } else {
+          requestParameters[`integration.request.path.${paramName}`] = `method.request.path.${paramName}`
+        }
+      }
+    }
+    if (additionalRequestParameters) {
+      Object.assign(requestParameters, additionalRequestParameters);
+    }
 
     const normalResponseParameters = {
       'method.response.header.ETag': 'integration.response.header.ETag',

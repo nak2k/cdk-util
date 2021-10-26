@@ -10,7 +10,7 @@
     "@aws-cdk/aws-s3": "^1.129.0",
     "@aws-cdk/aws-s3-deployment": "^1.129.0",
     "@aws-cdk/core": "^1.129.0",
-    "@cdk-util/aws-apigateway": "file:../cdk-util-aws-apigateway-0.1.5.tgz",
+    "@cdk-util/aws-apigateway": "file:../cdk-util-aws-apigateway-0.1.8.tgz",
     "@cdk-util/core": "^0.1.1",
     "@types/node": "^16.11.3",
     "aws-cdk": "^1.129.0",
