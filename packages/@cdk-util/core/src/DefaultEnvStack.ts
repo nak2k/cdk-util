@@ -1,5 +1,6 @@
-import { StringParameter, StringParameterProps } from '@aws-cdk/aws-ssm';
-import { Stack, Construct, StackProps, CfnOutput, CfnOutputProps } from '@aws-cdk/core';
+import { StringParameter, StringParameterProps } from 'aws-cdk-lib/aws-ssm';
+import { Stack, StackProps, CfnOutput, CfnOutputProps } from 'aws-cdk-lib';
+import { Construct } from 'constructs';
 
 export class DefaultEnvStack extends Stack {
   constructor(scope: Construct, id: string, props: StackProps) {
