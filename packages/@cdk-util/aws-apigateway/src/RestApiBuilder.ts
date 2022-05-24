@@ -1,6 +1,6 @@
-import { RestApi, Integration, MethodOptions, AwsIntegration, IntegrationResponse, MethodResponse } from "@aws-cdk/aws-apigateway";
-import { IRole } from "@aws-cdk/aws-iam";
-import { IBucket } from '@aws-cdk/aws-s3';
+import { RestApi, Integration, MethodOptions, AwsIntegration, IntegrationResponse, MethodResponse } from "aws-cdk-lib/aws-apigateway";
+import { IRole } from "aws-cdk-lib/aws-iam";
+import { IBucket } from 'aws-cdk-lib/aws-s3';
 
 type HttpMethod = 'HEAD' | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'ANY';
 
