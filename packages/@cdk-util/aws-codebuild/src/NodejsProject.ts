@@ -2,8 +2,8 @@ import { readFileSync } from 'fs';
 import { URL } from 'url';
 import {
   ProjectProps, Project, GitHubSourceProps, Source, FilterGroup, EventAction, LinuxBuildImage
-} from '@aws-cdk/aws-codebuild';
-import { Construct } from '@aws-cdk/core';
+} from 'aws-cdk-lib/aws-codebuild';
+import { Construct } from 'constructs';
 
 export interface NodejsProjectProps extends ProjectProps {
   /**
