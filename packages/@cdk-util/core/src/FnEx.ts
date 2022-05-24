@@ -1,4 +1,4 @@
-import { Fn } from "@aws-cdk/core";
+import { Fn } from "aws-cdk-lib";
 
 export class FnEx {
   /**
