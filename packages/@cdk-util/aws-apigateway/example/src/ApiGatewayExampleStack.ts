@@ -1,10 +1,11 @@
-import { Construct, RemovalPolicy } from "@aws-cdk/core";
+import { Construct } from "constructs";
+import { RemovalPolicy } from "aws-cdk-lib";
 import { DefaultEnvStack } from "@cdk-util/core";
-import { RestApi, MockIntegration, PassthroughBehavior, EndpointType } from "@aws-cdk/aws-apigateway";
+import { RestApi, MockIntegration, PassthroughBehavior, EndpointType } from "aws-cdk-lib/aws-apigateway";
 import { JSONMockIntegration, RedirectMockIntegration, RestApiBuilder, TextMockIntegration } from "@cdk-util/aws-apigateway";
-import { Bucket } from '@aws-cdk/aws-s3';
-import { BucketDeployment, Source } from "@aws-cdk/aws-s3-deployment";
-import { Role, ServicePrincipal } from '@aws-cdk/aws-iam';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
+import { Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 
 export class ApiGatewayExampleStack extends DefaultEnvStack {
   constructor(scope: Construct, id: string) {

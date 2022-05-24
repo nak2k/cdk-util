@@ -1,4 +1,4 @@
-import { MethodResponse, MockIntegration, PassthroughBehavior } from "@aws-cdk/aws-apigateway";
+import { MethodResponse, MockIntegration, PassthroughBehavior } from "aws-cdk-lib/aws-apigateway";
 import { RestApiBuilder } from "./RestApiBuilder";
 
 export interface RedirectMockIntegrationOptions {
