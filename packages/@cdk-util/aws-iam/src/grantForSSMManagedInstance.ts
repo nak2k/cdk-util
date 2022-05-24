@@ -1,4 +1,4 @@
-import { IRole, ManagedPolicy } from '@aws-cdk/aws-iam';
+import { IRole, ManagedPolicy } from 'aws-cdk-lib/aws-iam';
 
 /**
  * Grant connect to Systems Manager.
