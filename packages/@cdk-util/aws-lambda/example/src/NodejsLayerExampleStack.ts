@@ -1,12 +1,12 @@
-import { Construct } from "@aws-cdk/core";
+import { Construct } from "constructs";
 import { NodejsLayerVersion } from "@cdk-util/aws-lambda";
 import { DefaultEnvStack } from "@cdk-util/core";
 import {
   Code,
   Function,
   Runtime,
-} from "@aws-cdk/aws-lambda";
-import { FollowMode } from "@aws-cdk/assets";
+} from "aws-cdk-lib/aws-lambda";
+import { SymlinkFollowMode } from "aws-cdk-lib";
 
 export class NodejsLayerExampleStack extends DefaultEnvStack {
   constructor(scope: Construct, id: string) {
@@ -34,10 +34,10 @@ export class NodejsLayerExampleStack extends DefaultEnvStack {
     // Create the Lambda function.
     //
     new Function(this, "Function", {
-      runtime: Runtime.NODEJS_14_X,
+      runtime: Runtime.NODEJS_16_X,
       code: Code.fromAsset(lambdaPath, {
         exclude: ["package*.json", "node_modules", "tsconfig.json"],
-        follow: FollowMode.ALWAYS,
+        followSymlinks: SymlinkFollowMode.ALWAYS,
       }),
       handler: "index.handler",
       layers: [layer.layerVersion],

@@ -1,12 +1,12 @@
-import { Code, Function, ILayerVersion, LayerVersion, Runtime } from '@aws-cdk/aws-lambda';
-import { Asset } from '@aws-cdk/aws-s3-assets';
-import { Construct, CustomResource, Duration, Stack } from '@aws-cdk/core';
-import { basename, join } from 'path';
-import { createDirSync } from 'mktemp';
-import { copyFileSync, readFileSync, writeFileSync } from 'fs';
+import { CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { BuildSpec, LinuxBuildImage, Project } from 'aws-cdk-lib/aws-codebuild';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Code, Function, ILayerVersion, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Asset } from 'aws-cdk-lib/aws-s3-assets';
+import { Construct } from "constructs";
+import { copyFileSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { BuildSpec, LinuxBuildImage, Project } from '@aws-cdk/aws-codebuild';
-import { PolicyStatement } from '@aws-cdk/aws-iam';
+import { basename, join } from 'path';
 
 export interface NodejsLayerVersionProps {
   /**
@@ -30,6 +30,11 @@ export interface NodejsLayerVersionProps {
    * The boolean value whether only the custom resource provider is deployed for debugging.
    */
   providerOnly?: boolean;
+
+  /**
+   * The boolean value whether delete old layer versions.
+   */
+  deleteLayer?: boolean;
 }
 
 /**
@@ -54,7 +59,7 @@ export class NodejsLayerVersion extends Construct {
   constructor(scope: Construct, id: string, private props: NodejsLayerVersionProps) {
     super(scope, id);
 
-    const { packageDirectory, useLockFile, npmArgs, providerOnly } = props;
+    const { packageDirectory, useLockFile, npmArgs, providerOnly, deleteLayer } = props;
 
     const asset = this.createAsset(packageDirectory);
 
@@ -75,6 +80,7 @@ export class NodejsLayerVersion extends Construct {
         NpmArgs: npmArgs || (
           useLockFile ? ['ci', '--production'] : ['install', '--production']
         ),
+        DeleteLayer: deleteLayer,
       },
     });
 
@@ -90,7 +96,7 @@ export class NodejsLayerVersion extends Construct {
     const provider = stack.node.tryFindChild(providerId) as Function
       ?? new Function(stack, providerId, {
         code: Code.fromAsset(join(__dirname, 'nodejslayer-handler')),
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_16_X,
         handler: "index.handler",
         environment: {
           BUILDER_NAME: builder.projectName,
@@ -154,7 +160,7 @@ export class NodejsLayerVersion extends Construct {
   }
 
   private createAsset(packageDirectory: string) {
-    const tmpDir = createDirSync(join(tmpdir(), 'cdk-util-aws-lambda-XXXXXXXX'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'cdk-util-aws-lambda-'));
     const pkgJsonPath = join(tmpDir, 'package.json');
     const pkgLockJsonPath = join(tmpDir, 'package-lock.json');
 

@@ -25,6 +25,7 @@ interface NodejsLayerVersionProperties {
     Key: string;
   };
   NpmArgs: ReadonlyArray<string>;
+  DeleteLayer: boolean;
 }
 
 export async function handler(event: CloudFormationCustomResourceEvent): Promise<void> {
@@ -54,7 +55,7 @@ export async function handler(event: CloudFormationCustomResourceEvent): Promise
       ...event,
       Status: 'FAILED',
       PhysicalResourceId: event.RequestType === 'Create' ? CREATE_FAILED_MARKER : event.PhysicalResourceId,
-      Reason: err.stack,
+      Reason: (err as Error).stack || '',
     }, event);
   }
 }
@@ -105,9 +106,12 @@ async function updateHandler(event: CloudFormationCustomResourceUpdateEvent): Pr
 async function deleteHandler(event: CloudFormationCustomResourceDeleteEvent): Promise<void> {
   const {
     PhysicalResourceId,
+    ResourceProperties,
   } = event;
 
-  if (PhysicalResourceId !== CREATE_FAILED_MARKER) {
+  const props = ResourceProperties as NodejsLayerVersionProperties;
+
+  if (PhysicalResourceId !== CREATE_FAILED_MARKER && props.DeleteLayer) {
     const lambda = new Lambda();
 
     const [, , , , , , LayerName, VersionNumber] = PhysicalResourceId.split(':');

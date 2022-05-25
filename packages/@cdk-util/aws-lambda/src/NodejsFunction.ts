@@ -1,9 +1,9 @@
-import { Code, Function, FunctionBase, FunctionProps, Runtime } from '@aws-cdk/aws-lambda';
-import type { IPrincipal, IRole } from '@aws-cdk/aws-iam';
-import { Construct, ConstructNode } from '@aws-cdk/core';
-import { NodejsLayerVersion, NodejsLayerVersionProps } from './NodejsLayerVersion';
+import type { IPrincipal, IRole } from 'aws-cdk-lib/aws-iam';
+import { Architecture, Code, Function, FunctionBase, FunctionProps, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Construct, Node } from 'constructs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { NodejsLayerVersion, NodejsLayerVersionProps } from './NodejsLayerVersion';
 
 export interface NodejsFunctionProps extends Partial<FunctionProps>, Omit<NodejsLayerVersionProps, 'providerOnly'> {
 }
@@ -27,8 +27,10 @@ export class NodejsFunction extends FunctionBase {
   readonly functionName: string;
   readonly functionArn: string;
   readonly role?: IRole;
-  readonly permissionsNode: ConstructNode;
+  readonly permissionsNode: Node;
+  readonly architecture: Architecture;
   protected readonly canCreatePermissions: boolean;
+  readonly resourceArnsForGrantInvoke: string[];
 
   constructor(scope: Construct, id: string, props: NodejsFunctionProps) {
     super(scope, id);
@@ -52,7 +54,7 @@ export class NodejsFunction extends FunctionBase {
 
     this.handler = new Function(this, 'Function', {
       code: code || NodejsFunction.getCode(packageDirectory),
-      runtime: runtime || Runtime.NODEJS_14_X,
+      runtime: runtime || Runtime.NODEJS_16_X,
       handler: handler || 'index.handler',
       layers: layers ? [...layers, this.layerVersion] : [this.layerVersion],
       ...restProps
@@ -63,7 +65,9 @@ export class NodejsFunction extends FunctionBase {
     this.functionArn = this.handler.functionArn;
     this.role = this.handler.role;
     this.permissionsNode = this.handler.permissionsNode;
+    this.architecture = this.handler.architecture;
     this.canCreatePermissions = true;
+    this.resourceArnsForGrantInvoke = this.handler.resourceArnsForGrantInvoke;
   }
 
   public static getCode(packageDirectory: string) {
