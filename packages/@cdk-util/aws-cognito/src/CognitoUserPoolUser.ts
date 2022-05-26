@@ -1,10 +1,11 @@
-import { Construct, CustomResource, Duration, Stack } from '@aws-cdk/core';
-import { Code, Function, Runtime } from '@aws-cdk/aws-lambda';
+import { CustomResource, Duration, Stack } from 'aws-cdk-lib';
+import { UserPool } from 'aws-cdk-lib/aws-cognito';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Code, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
+import { ParameterType, StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { Construct } from "constructs";
 import { join } from 'path';
-import { PolicyStatement } from '@aws-cdk/aws-iam';
-import { UserPool } from '@aws-cdk/aws-cognito';
-import { StringParameter, ParameterType } from '@aws-cdk/aws-ssm';
-import { Secret } from '@aws-cdk/aws-secretsmanager';
 
 export type CognitoUserPoolUserProps = {
   userPool: UserPool;

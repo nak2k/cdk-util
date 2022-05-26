@@ -40,7 +40,7 @@ export async function handler(event: CloudFormationCustomResourceEvent): Promise
       default:
         throw new Error(`Malformed event: Unknown request type ${(event as any).RequestType}`);
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
 
     await submitResponse({
