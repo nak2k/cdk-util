@@ -121,7 +121,7 @@ async function getSecret(secretId: string): Promise<{ password: string }> {
 
   try {
     return JSON.parse(SecretString);
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(`The secret ${secretId} is invalid JSON: ${err.message}`);
   }
 }
@@ -140,7 +140,7 @@ export async function cognitoDeleteUser(options: {
 }) {
   try {
     await cognito.adminDeleteUser(options).promise();
-  } catch (err) {
+  } catch (err: any) {
     // Ignore UserNotFoundException
     if (err.code === "UserNotFoundException") {
       return;

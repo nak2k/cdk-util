@@ -1,7 +1,8 @@
-import { Construct, RemovalPolicy } from "@aws-cdk/core";
-import { DefaultEnvStack } from "@cdk-util/core";
-import { UserPool } from "@aws-cdk/aws-cognito";
 import { CognitoUserPoolUser } from "@cdk-util/aws-cognito";
+import { DefaultEnvStack } from "@cdk-util/core";
+import { RemovalPolicy } from "aws-cdk-lib";
+import { UserPool } from "aws-cdk-lib/aws-cognito";
+import { Construct } from "constructs";
 
 export class CognitoExampleStack extends DefaultEnvStack {
   constructor(scope: Construct, id: string) {
