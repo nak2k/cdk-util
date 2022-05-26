@@ -1,6 +1,6 @@
-import { Construct } from "@aws-cdk/core";
-import { DefaultEnvStack } from "@cdk-util/core";
 import { EventsToSlack } from "@cdk-util/aws-events";
+import { DefaultEnvStack } from "@cdk-util/core";
+import { Construct } from "constructs";
 
 export class EventsToSlackExampleStack extends DefaultEnvStack {
   constructor(scope: Construct, id: string) {

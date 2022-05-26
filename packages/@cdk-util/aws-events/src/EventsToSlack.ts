@@ -1,8 +1,9 @@
-import { Construct, Duration } from "@aws-cdk/core";
-import { Function, Code, Runtime } from "@aws-cdk/aws-lambda";
-import { Rule } from "@aws-cdk/aws-events";
-import { LambdaFunction } from "@aws-cdk/aws-events-targets";
-import { PolicyStatement } from "@aws-cdk/aws-iam";
+import { Duration } from "aws-cdk-lib";
+import { Rule } from "aws-cdk-lib/aws-events";
+import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
+import { PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Construct } from "constructs";
 
 export interface EventsToSlackProps {
   /**
