@@ -1,6 +1,6 @@
 {
   "name": "@cdk-util/aws-cognito",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Utilities for AWS CDK",
   "author": "Kengo Nakatsuka <kengo.nakatsuka@gmail.com>",
   "bugs": {
