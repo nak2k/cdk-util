@@ -1,7 +1,8 @@
 import {
-  IConstruct, Aspects, CfnResource, Construct, Fn, RemovalPolicy
-} from "@aws-cdk/core";
-import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
+  Aspects, CfnResource, Fn, RemovalPolicy
+} from "aws-cdk-lib";
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { Construct, IConstruct } from "constructs";
 
 export interface PreparedLogGroupApplyProps {
   removalPolicy?: RemovalPolicy;

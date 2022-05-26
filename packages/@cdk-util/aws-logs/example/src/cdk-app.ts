@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { App, RemovalPolicy } from "@aws-cdk/core";
-import { PreparedLogGroupExampleStack } from "./PreparedLogGroupExampleStack";
 import { PreparedLogGroup } from "@cdk-util/aws-logs";
-import { RetentionDays } from '@aws-cdk/aws-logs';
+import { App, RemovalPolicy } from "aws-cdk-lib";
+import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { PreparedLogGroupExampleStack } from "./PreparedLogGroupExampleStack";
 
 export const app = new App();
 
